@@ -1,0 +1,79 @@
+# ============================================================================
+# 超市管理系统（萌宠优选）仓库根 .gitignore
+# 原则：只提交源码 / SQL / 文档 / 启停脚本；本机环境、构建产物、密钥、日志不入库
+# ============================================================================
+
+# ---------- 大体积本地环境（几百 MB，对方自行安装 MySQL） ----------
+/mysql-8.0.46-winx64/
+
+# ---------- 原始 RuoYi 基座副本 ----------
+# 交接包 backend/ 已是完整可编译工程；且本副本的 application-druid.yml 含明文密码。
+# 如需一并上传：删除下面两行，并先把 password 改为 ${DB_PASSWORD:}
+/RuoYi-Vue-master/
+
+# ---------- 历史交接包与压缩包（只保留最新的 萌宠优选_后端交接包/） ----------
+/萌宠优选_后端交接包_20261019/
+/*.zip
+/*.zip.sha256.txt
+
+# ---------- Java / Maven 构建产物 ----------
+**/target/
+*.class
+*.jar
+*.war
+
+# ---------- Node / 前端依赖与产物 ----------
+**/node_modules/
+**/dist/
+**/.vite/
+**/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------- 本地配置与密钥（含数据库密码，禁止入库） ----------
+.env
+.env.*
+!.env.example
+!*.env.example
+config/backend.env
+*.pem
+*.key
+*.p12
+*.jks
+
+# ---------- IDE / 操作系统 ----------
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ---------- 本机调试脚本与运行状态（含本机路径 / 密码） ----------
+/_start.ps1
+/_smoke.ps1
+/_perm_diff.ps1
+/*.pid
+/*.log
+/_app*.log
+/.mysql_state.txt
+/java-check.txt
+/jdk-check.txt
+/maven-check.txt
+/target-check.txt
+/where-mvn.txt
+/mall-tree.txt
+/mappers.txt
+/service-signatures.txt
+
+# ---------- 运行数据 ----------
+/data/
+/uploads/
+/logs/
+*.tmp
+*.bak
+*.swp
+*~

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mall.mapper.PetMemberPetMapper">
+
+    <sql id="columns">
+        id, member_id, name, species, breed, birthday, weight, sterilized,
+        allergy_note, status, create_time, update_time
+    </sql>
+
+    <select id="selectByMemberId" resultType="com.ruoyi.mall.domain.PetMemberPet">
+        SELECT <include refid="columns"/> FROM pet_member_pet
+        WHERE member_id = #{memberId}
+        <if test="!includeArchived">
+            AND status = 0
+        </if>
+        ORDER BY status ASC, create_time ASC, id ASC
+    </select>
+
+    <select id="selectByIdAndMember" resultType="com.ruoyi.mall.domain.PetMemberPet">
+        SELECT <include refid="columns"/> FROM pet_member_pet
+        WHERE id = #{id} AND member_id = #{memberId} LIMIT 1
+    </select>
+
+    <select id="countByMember" resultType="int">
+        SELECT COUNT(*) FROM pet_member_pet WHERE member_id = #{memberId} AND status = 0
+    </select>
+
+    <insert id="insert" parameterType="com.ruoyi.mall.domain.PetMemberPet" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pet_member_pet
+            (member_id, name, species, breed, birthday, weight, sterilized, allergy_note, status, create_time, update_time)
+        VALUES
+            (#{memberId}, #{name}, #{species}, #{breed}, #{birthday}, #{weight}, #{sterilized},
+             #{allergyNote}, #{status}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.mall.domain.PetMemberPet">
+        UPDATE pet_member_pet
+        SET name = #{name}, species = #{species}, breed = #{breed}, birthday = #{birthday},
+            weight = #{weight}, sterilized = #{sterilized}, allergy_note = #{allergyNote},
+            status = #{status}, update_time = NOW()
+        WHERE id = #{id} AND member_id = #{memberId}
+    </update>
+
+    <update id="archive">
+        UPDATE pet_member_pet SET status = 1, update_time = NOW()
+        WHERE id = #{id} AND member_id = #{memberId}
+    </update>
+</mapper>

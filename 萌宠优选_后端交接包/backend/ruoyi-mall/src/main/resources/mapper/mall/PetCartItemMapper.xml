@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mall.mapper.PetCartItemMapper">
+
+    <sql id="columns">
+        id, member_id, item_id, sku_id, quantity, checked, pet_id, create_time, update_time
+    </sql>
+
+    <select id="selectByMemberId" resultType="com.ruoyi.mall.domain.PetCartItem">
+        SELECT <include refid="columns"/> FROM pet_cart_item
+        WHERE member_id = #{memberId}
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectChecked" resultType="com.ruoyi.mall.domain.PetCartItem">
+        SELECT <include refid="columns"/> FROM pet_cart_item
+        WHERE member_id = #{memberId} AND checked = 1
+        ORDER BY create_time ASC, id ASC
+    </select>
+
+    <select id="selectByIdAndMember" resultType="com.ruoyi.mall.domain.PetCartItem">
+        SELECT <include refid="columns"/> FROM pet_cart_item
+        WHERE id = #{id} AND member_id = #{memberId} LIMIT 1
+    </select>
+
+    <select id="selectByMemberAndSku" resultType="com.ruoyi.mall.domain.PetCartItem">
+        SELECT <include refid="columns"/> FROM pet_cart_item
+        WHERE member_id = #{memberId} AND sku_id = #{skuId} LIMIT 1
+    </select>
+
+    <select id="countByMember" resultType="int">
+        SELECT COUNT(*) FROM pet_cart_item WHERE member_id = #{memberId}
+    </select>
+
+    <insert id="insert" parameterType="com.ruoyi.mall.domain.PetCartItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pet_cart_item
+            (member_id, item_id, sku_id, quantity, checked, pet_id, create_time, update_time)
+        VALUES
+            (#{memberId}, #{itemId}, #{skuId}, #{quantity}, #{checked}, #{petId}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.mall.domain.PetCartItem">
+        UPDATE pet_cart_item
+        SET quantity = #{quantity}, checked = #{checked}, pet_id = #{petId}, update_time = NOW()
+        WHERE id = #{id} AND member_id = #{memberId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM pet_cart_item WHERE id = #{id} AND member_id = #{memberId}
+    </delete>
+
+    <delete id="deleteByMemberAndSkus">
+        DELETE FROM pet_cart_item
+        WHERE member_id = #{memberId} AND sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+    </delete>
+</mapper>

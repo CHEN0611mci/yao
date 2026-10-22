@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mall.mapper.PetItemMapper">
+
+    <sql id="columns">
+        id, category_id, merchant_id, title, subtitle, main_image, brand, pet_species,
+        age_stage, weight_range, price_min, cost_price, support_subscribe, is_prescription,
+        detail, audit_status, status, sales, del_flag, create_time, update_time
+    </sql>
+
+    <sql id="publicWhere">
+        i.del_flag = '0' AND i.status = 1 AND i.audit_status = 2
+        <if test="keyword != null and keyword != ''">
+            AND (i.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR i.subtitle LIKE CONCAT('%', #{keyword}, '%')
+                 OR i.brand LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="categoryIds != null and categoryIds.size() > 0">
+            AND i.category_id IN
+            <foreach collection="categoryIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
+        </if>
+        <if test="species != null and species != ''">
+            AND (i.pet_species = #{species} OR i.pet_species = 'ALL')
+        </if>
+        <if test="ageStage != null and ageStage != ''">
+            AND (i.age_stage = #{ageStage} OR i.age_stage = 'ALL')
+        </if>
+        <if test="minPrice != null">AND i.price_min &gt;= #{minPrice}</if>
+        <if test="maxPrice != null">AND i.price_min &lt;= #{maxPrice}</if>
+    </sql>
+
+    <select id="selectPublicList" resultType="com.ruoyi.mall.domain.PetItem">
+        SELECT i.* FROM pet_item i
+        WHERE <include refid="publicWhere"/>
+        <choose>
+            <when test='sort == "price_asc"'>ORDER BY i.price_min ASC, i.id DESC</when>
+            <when test='sort == "price_desc"'>ORDER BY i.price_min DESC, i.id DESC</when>
+            <when test='sort == "newest"'>ORDER BY i.create_time DESC, i.id DESC</when>
+            <when test='sort == "sales"'>ORDER BY i.sales DESC, i.id DESC</when>
+            <otherwise>ORDER BY i.sales DESC, i.create_time DESC, i.id DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectAdminList" resultType="com.ruoyi.mall.domain.PetItem">
+        SELECT i.* FROM pet_item i
+        WHERE i.del_flag = '0'
+        <if test="keyword != null and keyword != ''">
+            AND (i.title LIKE CONCAT('%', #{keyword}, '%')
+                 OR i.brand LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="categoryIds != null and categoryIds.size() > 0">
+            AND i.category_id IN
+            <foreach collection="categoryIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
+        </if>
+        <if test="auditStatus != null">AND i.audit_status = #{auditStatus}</if>
+        <if test="status != null">AND i.status = #{status}</if>
+        <if test="merchantId != null">AND i.merchant_id = #{merchantId}</if>
+        ORDER BY i.create_time DESC, i.id DESC
+    </select>
+
+    <select id="selectById" resultType="com.ruoyi.mall.domain.PetItem">
+        SELECT <include refid="columns"/> FROM pet_item
+        WHERE id = #{id} AND del_flag = '0' LIMIT 1
+    </select>
+
+    <select id="selectSellableById" resultType="com.ruoyi.mall.domain.PetItem">
+        SELECT <include refid="columns"/> FROM pet_item
+        WHERE id = #{id} AND del_flag = '0' AND status = 1 AND audit_status = 2 LIMIT 1
+    </select>
+
+    <select id="selectRecommend" resultType="com.ruoyi.mall.domain.PetItem">
+        SELECT <include refid="columns"/> FROM pet_item
+        WHERE del_flag = '0' AND status = 1 AND audit_status = 2
+        ORDER BY sales DESC, create_time DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insert" parameterType="com.ruoyi.mall.domain.PetItem" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pet_item
+            (category_id, merchant_id, title, subtitle, main_image, brand, pet_species, age_stage,
+             weight_range, price_min, cost_price, support_subscribe, is_prescription, detail,
+             audit_status, status, sales, del_flag, create_time, update_time)
+        VALUES
+            (#{categoryId}, #{merchantId}, #{title}, #{subtitle}, #{mainImage}, #{brand},
+             #{petSpecies}, #{ageStage}, #{weightRange}, #{priceMin}, #{costPrice},
+             #{supportSubscribe}, #{isPrescription}, #{detail}, #{auditStatus}, #{status},
+             0, '0', NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.mall.domain.PetItem">
+        UPDATE pet_item
+        SET category_id = #{categoryId}, merchant_id = #{merchantId}, title = #{title},
+            subtitle = #{subtitle}, main_image = #{mainImage}, brand = #{brand},
+            pet_species = #{petSpecies}, age_stage = #{ageStage}, weight_range = #{weightRange},
+            price_min = #{priceMin}, cost_price = #{costPrice},
+            support_subscribe = #{supportSubscribe}, is_prescription = #{isPrescription},
+            detail = #{detail}, audit_status = #{auditStatus}, status = #{status},
+            update_time = NOW()
+        WHERE id = #{id} AND del_flag = '0'
+    </update>
+
+    <update id="updateStatus">
+        UPDATE pet_item SET status = #{status}, update_time = NOW()
+        WHERE id = #{id} AND del_flag = '0'
+    </update>
+
+    <update id="updateAudit">
+        UPDATE pet_item SET audit_status = #{auditStatus},
+            status = CASE WHEN #{auditStatus} = 1 THEN 0 ELSE status END,
+            update_time = NOW()
+        WHERE id = #{id} AND del_flag = '0'
+    </update>
+
+    <update id="incrementSales">
+        UPDATE pet_item SET sales = sales + #{quantity}, update_time = NOW()
+        WHERE id = #{id} AND del_flag = '0'
+    </update>
+
+    <select id="countByCategory" resultType="int">
+        SELECT COUNT(*) FROM pet_item WHERE category_id = #{categoryId} AND del_flag = '0'
+    </select>
+</mapper>
