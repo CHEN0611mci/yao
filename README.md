@@ -40,6 +40,17 @@ cd admin-ui
 npm run dev           # 默认端口 80，代理到 localhost:8080
 ```
 
+商城管理端页面已按《管理端前端详细设计 v1.0》实现：`/mall/*` 8 个管理页（工作台、商品管理、商品审核、类目管理、订单管理、会员管理、库存总览、审计日志）+ `/merchant/*` 2 个商家页（我的商品、我的订单）。
+
+```powershell
+cd admin-ui
+node scripts/mall-check.mjs   # 商城前端静态自检（页面/路由名/权限码/import/SFC 编译）
+npm.cmd run build:prod        # 生产构建 → dist/
+```
+
+- 商城接口（`/api/admin/**`、`/api/merchant/**`、`/api/upload/**`、`/api/home/**`）统一走 `src/utils/mallRequest.js`；若依接口仍走 `src/utils/request.js`。
+- 首次联调前建议执行 `db/04_fix_menu_route_name.sql`：管理端与商家端的 `items`/`orders` 路由同名，需给 3201/3202 补 `route_name`（设计文档 R-01；重跑 `03_seed.sql` 后需再次执行）。
+
 更多说明见 `RUNBOOK.md`；交接包原始说明已归档到 `docs/后端交接包_交付说明.md`。
 
 ## Git 说明
