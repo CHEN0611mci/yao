@@ -3,13 +3,15 @@
 基于 **RuoYi-Vue 3.9.2**（Spring Boot + Vue3）二次开发的宠物商城系统，包含后台管理端、会员端接口与商城业务模块 `ruoyi-mall`。
 
 > 同伴交付的《萌宠优选_后端交接包》内容已全部合并进本仓库根目录（不再保留“交接包”文件夹），并把本地原有文档/脚本中的独有内容合并进来，重复副本已清理。
+>
+> 协作者推送的 `main` 分支（管理端 10 个页面、9 个 API 模块、10 个公共组件、前端设计文档与验收证据）已合并进 `master`，目录结构统一为仓库根目录平铺，原 `萌宠优选_后端交接包/` 包裹目录已移除（后端内容与平铺版本逐字节相同）。
 
 ## 目录结构
 
 ```text
-Aiwork5/
+超市管理系统/
 ├─ backend/      后端源码（RuoYi + ruoyi-mall）
-├─ admin-ui/     管理前端（已含 node_modules、.env、package-lock）
+├─ admin-ui/     管理前端（RuoYi-Vue3 + Vite，已实现 /mall 与 /merchant 页面；首次需 npm install）
 ├─ config/       配置模板与本机 backend.env（含密码，Git 忽略）
 ├─ db/           SQL 脚本与执行证据
 ├─ docs/         需求 / 设计 / 数据库 / 规划 / AI 日志（已合并本地独有版本）
@@ -55,7 +57,11 @@ npm.cmd run build:prod        # 生产构建 → dist/
 
 ## Git 说明
 
-- 分支：`main`（本地仓库，暂无远程）
+- 主分支：`master`（整合后的唯一主线）；历史中保留了协作者的 10 次提交（合并提交 `d439bb5`，双父：`a5e86d5` + `4392d2a`）
+- 远端：
+  - `origin` → Gitee `https://gitee.com/yee_8_0/yao.git`
+  - `github` → GitHub `https://github.com/CHEN0611mci/yao.git`
+- 日常同步：`git push origin master && git push github master`
 - 只跟踪项目源码 / SQL / 文档 / 脚本，及 `.gitattributes`、`.gitignore` 等必要文件
 - 本机环境与辅助文件不入库：`dev-redis/`、`msi-logs/`、`mysql-backup/`、`release/`、`ch09_png/`、课程笔记、安装日志等
 - `node_modules/`、`target/`、`*.jar`、`.env*`、`config/backend.env`、日志与备份由 `.gitignore` 排除
