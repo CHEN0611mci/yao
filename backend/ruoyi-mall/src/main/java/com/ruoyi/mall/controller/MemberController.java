@@ -17,6 +17,7 @@ import com.ruoyi.mall.dto.LoginResponse;
 import com.ruoyi.mall.dto.MemberLoginRequest;
 import com.ruoyi.mall.dto.MemberRegisterRequest;
 import com.ruoyi.mall.dto.MemberUpdateRequest;
+import com.ruoyi.mall.dto.PasswordChangeRequest;
 import com.ruoyi.mall.service.MemberService;
 
 /**
@@ -28,6 +29,22 @@ import com.ruoyi.mall.service.MemberService;
 @RequestMapping("/api/member")
 public class MemberController
 {
+    @Autowired private com.ruoyi.system.service.ISysOperLogService operLogService;
+    @Autowired private com.ruoyi.mall.common.MallRateLimiter rateLimiter;
+
+    @PostMapping("/feedback")
+    public Result<Void> feedback(@Valid @RequestBody com.ruoyi.mall.dto.FeedbackRequest request)
+    {
+        Long memberId = MemberContext.require();
+        rateLimiter.check("feedback", String.valueOf(memberId), 5, 600);
+        var log = new com.ruoyi.system.domain.SysOperLog();
+        log.setTitle("商城意见反馈"); log.setBusinessType(0); log.setOperatorType(0);
+        log.setOperName("member:" + memberId); log.setOperUrl("/api/member/feedback");
+        log.setMethod("MemberController.feedback"); log.setRequestMethod("POST");
+        log.setOperParam(request.content().trim()); log.setStatus(0); log.setCostTime(0L);
+        operLogService.insertOperlog(log);
+        return Result.success();
+    }
     @Autowired
     private MemberService memberService;
 
@@ -63,5 +80,12 @@ public class MemberController
     public Result<PetMember> updateProfile(@Valid @RequestBody MemberUpdateRequest request)
     {
         return Result.success(memberService.updateProfile(MemberContext.require(), request));
+    }
+
+    @PutMapping("/password")
+    public Result<Void> password(@Valid @RequestBody PasswordChangeRequest request)
+    {
+        memberService.changePassword(MemberContext.require(), request);
+        return Result.success();
     }
 }

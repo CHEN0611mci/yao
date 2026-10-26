@@ -34,6 +34,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE id = #{id} AND del_flag = '0'
     </update>
 
+    <update id="changePassword">
+        UPDATE pet_member SET password = #{password}, update_time = NOW()
+        WHERE id = #{id} AND password = #{previous} AND del_flag = '0'
+    </update>
+
     <update id="updateStatus">
         UPDATE pet_member SET status = #{status}, update_time = NOW()
         WHERE id = #{id} AND del_flag = '0'

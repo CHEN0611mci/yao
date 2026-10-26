@@ -85,4 +85,11 @@ public class MallExceptionHandler
         return ResponseEntity.status(ErrorCode.PET_1001.getHttpStatus())
                 .body(Result.failure(ErrorCode.PET_1001, message));
     }
+
+    @ExceptionHandler(org.springframework.data.redis.RedisConnectionFailureException.class)
+    public ResponseEntity<Result<Void>> handleRedis(org.springframework.data.redis.RedisConnectionFailureException e)
+    {
+        log.error("缓存连接失败", e);
+        return ResponseEntity.status(503).body(Result.failure(ErrorCode.PET_5002, "Redis 未就绪，请启动缓存服务后重试"));
+    }
 }

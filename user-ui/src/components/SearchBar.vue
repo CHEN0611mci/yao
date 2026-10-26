@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from './Icon.vue'
+import { remember } from '../utils/search.js'
 const route = useRoute(),
   router = useRouter(),
   keyword = ref(route.query.keyword || '')
@@ -12,6 +13,7 @@ watch(
   },
 )
 function search() {
+  remember(keyword.value)
   router.push({
     path: keyword.value.trim() ? '/search' : '/items',
     query: keyword.value.trim() ? { keyword: keyword.value.trim().slice(0, 100) } : {},

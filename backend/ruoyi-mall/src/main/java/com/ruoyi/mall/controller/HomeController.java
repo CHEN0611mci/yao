@@ -13,6 +13,7 @@ import com.ruoyi.mall.domain.PetCategory;
 import com.ruoyi.mall.domain.PetItem;
 import com.ruoyi.mall.service.CategoryService;
 import com.ruoyi.mall.service.ItemService;
+import com.ruoyi.mall.service.StorefrontService;
 
 /**
  * 前台首页接口：分类树与推荐商品，均支持匿名访问。
@@ -23,6 +24,13 @@ import com.ruoyi.mall.service.ItemService;
 @RequestMapping("/api/home")
 public class HomeController
 {
+    @Autowired private StorefrontService storefrontService;
+
+    @GetMapping("/settings")
+    public Result<java.util.Map<String, Object>> settings()
+    {
+        return Result.success(storefrontService.settings());
+    }
     @Autowired
     private CategoryService categoryService;
 

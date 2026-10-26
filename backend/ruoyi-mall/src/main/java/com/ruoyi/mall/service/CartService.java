@@ -46,6 +46,8 @@ public class CartService
     @Autowired
     private MallConfigService configService;
 
+    @Autowired private CatalogPolicy catalogPolicy;
+
     public List<PetCartItem> list(Long memberId)
     {
         return enrich(memberId, cartMapper.selectByMemberId(memberId), false);
@@ -79,6 +81,7 @@ public class CartService
             throw new BizException(ErrorCode.PET_3003);
         }
         verifyPet(memberId, request.petId());
+        catalogPolicy.checkSale(item);
 
         PetCartItem existing = cartMapper.selectByMemberAndSku(memberId, request.skuId());
         int quantity = request.quantity() + (existing == null ? 0 : existing.getQuantity());
@@ -139,7 +142,11 @@ public class CartService
         {
             row.setChecked(request.checked() == 1 ? 1 : 0);
         }
-        if (request.petId() != null)
+        if (Boolean.TRUE.equals(request.clearPet()))
+        {
+            row.setPetId(null);
+        }
+        else if (request.petId() != null)
         {
             verifyPet(memberId, request.petId());
             row.setPetId(request.petId());
@@ -184,6 +191,7 @@ public class CartService
             PetItem item = itemMapper.selectSellableById(row.getItemId());
             PetItemSku sku = skuMapper.selectById(row.getSkuId());
             row.setItem(item);
+            if (item != null) item.setCostPrice(null);
             row.setSku(sku);
             row.setPetName(row.getPetId() == null ? null : petNames.get(row.getPetId()));
 

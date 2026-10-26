@@ -68,6 +68,11 @@ public class PetProfileService
     public PetMemberPet update(Long memberId, Long petId, PetProfileRequest request)
     {
         PetMemberPet pet = getOwned(memberId, petId);
+        if (pet.getStatus() != 0 && Integer.valueOf(0).equals(request.status())
+                && petMapper.countByMember(memberId) >= configService.petMax())
+        {
+            throw new BizException(ErrorCode.PET_1004, "活跃宠物档案已达上限，请先归档其他档案");
+        }
         apply(pet, request);
         if (request.status() != null)
         {

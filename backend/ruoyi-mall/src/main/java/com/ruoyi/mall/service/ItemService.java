@@ -75,12 +75,33 @@ public class ItemService
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired private CatalogPolicy catalogPolicy;
+
     public PageResult<PetItem> publicList(ItemQuery query, Long memberId)
     {
+        return publicList(query, memberId, false, null);
+    }
+
+    public PageResult<PetItem> publicList(ItemQuery query, Long memberId, boolean onlyStock, Long petId)
+    {
+        Map<String, Object> params = publicQuery(query);
+        catalogPolicy.checkText(query.keyword());
+        params.put("onlyStock", onlyStock);
+        if (petId != null)
+        {
+            PetMemberPet pet = memberId == null ? null : petMapper.selectByIdAndMember(petId, memberId);
+            if (pet == null || pet.getStatus() != 0) throw new ForbiddenException("宠物档案不存在或无权访问");
+            params.put("species", pet.getSpecies());
+            params.put("ageStage", ageStageOf(pet.getBirthday()));
+        }
         PageHelper.startPage(query.safePageNum(), query.safePageSize());
-        List<PetItem> list = itemMapper.selectPublicList(publicQuery(query));
+        List<PetItem> list = itemMapper.selectPublicList(params);
         PageInfo<PetItem> pageInfo = new PageInfo<>(list);
         applyAdapt(pageInfo.getList(), memberId);
+        pageInfo.getList().forEach(item -> item.setCostPrice(null));
+        if (petId != null)
+            for (PetItem item : pageInfo.getList())
+                item.setAdapt(item.getAdapts().stream().filter(a -> petId.equals(a.petId())).findFirst().orElse(null));
         return PageResult.of(pageInfo);
     }
 
@@ -88,6 +109,7 @@ public class ItemService
     {
         List<PetItem> list = itemMapper.selectRecommend(Math.max(1, Math.min(limit, 20)));
         applyAdapt(list, memberId);
+        list.forEach(item -> item.setCostPrice(null));
         return list;
     }
 
@@ -99,6 +121,8 @@ public class ItemService
             throw new BizException(ErrorCode.PET_3003);
         }
         fillDetail(item, true);
+        catalogPolicy.checkSale(item);
+        item.setCostPrice(null);
         applyAdapt(java.util.Collections.singletonList(item), memberId);
         return item;
     }
@@ -124,17 +148,18 @@ public class ItemService
 
     public PageResult<PetItem> adminList(ItemQuery query)
     {
-        PageHelper.startPage(query.safePageNum(), query.safePageSize());
         Map<String, Object> params = adminQuery(query, null);
+        PageHelper.startPage(query.safePageNum(), query.safePageSize());
         PageInfo<PetItem> pageInfo = new PageInfo<>(itemMapper.selectAdminList(params));
         return PageResult.of(pageInfo);
     }
 
     public PageResult<PetItem> merchantList(ItemQuery query, Long merchantId)
     {
+        Map<String, Object> params = adminQuery(query, merchantId);
         PageHelper.startPage(query.safePageNum(), query.safePageSize());
         PageInfo<PetItem> pageInfo = new PageInfo<>(
-                itemMapper.selectAdminList(adminQuery(query, merchantId)));
+                itemMapper.selectAdminList(params));
         return PageResult.of(pageInfo);
     }
 
@@ -441,6 +466,7 @@ public class ItemService
 
     private void applyItem(PetItem item, ItemSaveRequest request)
     {
+        catalogPolicy.checkText(request.title() + " " + request.subtitle() + " " + request.detail());
         item.setCategoryId(request.categoryId());
         item.setTitle(request.title().trim());
         item.setSubtitle(request.subtitle());

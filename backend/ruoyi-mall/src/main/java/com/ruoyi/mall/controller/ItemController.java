@@ -39,13 +39,15 @@ public class ItemController
             @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
             @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
             @RequestParam(value = "sort", required = false) String sort,
+            @RequestParam(value = "onlyStock", defaultValue = "false") boolean onlyStock,
+            @RequestParam(value = "petId", required = false) Long petId,
             @RequestParam(value = "pageNum", required = false) Integer pageNum,
             @RequestParam(value = "pageSize", required = false) Integer pageSize,
             HttpServletRequest request)
     {
         ItemQuery query = new ItemQuery(keyword, categoryId, species, ageStage, minPrice, maxPrice,
                 sort, null, null, null, pageNum, pageSize);
-        return Result.success(itemService.publicList(query, memberTokenService.optionalMemberId(request)));
+        return Result.success(itemService.publicList(query, memberTokenService.optionalMemberId(request), onlyStock, petId));
     }
 
     @GetMapping("/{id}")

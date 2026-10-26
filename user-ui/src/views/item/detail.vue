@@ -47,8 +47,10 @@ async function add(buy = false) {
   if (!sku.value) return
   const adapt = item.value.adapts?.find((row) => row.petId === pet.selected)
   if (
-    adapt?.level === 'UNSUITABLE' &&
-    !(await confirm(`该商品不适合${adapt.petName}，仍要购买吗？`))
+    ['UNSUITABLE', 'CAUTION'].includes(adapt?.level) &&
+    !(await confirm(
+      `${adapt.petName}购买此商品需注意：${adapt.reasons?.join('；') || '适配存在冲突'}。仍要购买吗？`,
+    ))
   )
     return
   if (buy && !member.loggedIn) {

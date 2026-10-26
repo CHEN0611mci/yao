@@ -38,6 +38,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SELECT <include refid="columns"/> FROM pet_order
         WHERE member_id = #{memberId}
         <if test="status != null">AND status = #{status}</if>
+        <if test="keyword != null and keyword != ''">
+            AND (order_no LIKE CONCAT('%', #{keyword}, '%') OR id IN
+                (SELECT order_id FROM pet_order_item WHERE title LIKE CONCAT('%', #{keyword}, '%')))
+        </if>
         ORDER BY create_time DESC, id DESC
     </select>
 
@@ -66,7 +70,12 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="updateToPaid">
         UPDATE pet_order
         SET status = 2, pay_time = NOW(), update_time = NOW()
-        WHERE order_no = #{orderNo} AND status = 0
+        WHERE order_no = #{orderNo} AND status = 0 AND expire_at &gt; NOW()
+    </update>
+
+    <update id="changeAddress">
+        UPDATE pet_order SET receiver_snapshot = #{snapshot}, update_time = NOW()
+        WHERE order_no = #{orderNo} AND member_id = #{memberId} AND status IN (0, 1, 2)
     </update>
 
     <update id="cancel">

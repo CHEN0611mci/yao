@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import * as api from '../../api/order.js'
 import { useTask, useAction, confirm } from '../../composables/useTask.js'
-import { parseSnapshot } from '../../utils/format.js'
+import { parseSnapshot, petSnapshotName } from '../../utils/format.js'
 import AsyncState from '../../components/AsyncState.vue'
 import OrderStatusTag from '../../components/OrderStatusTag.vue'
 import MoneyText from '../../components/MoneyText.vue'
@@ -11,6 +11,7 @@ import ImageWithFallback from '../../components/ImageWithFallback.vue'
 import StatusTimeline from '../../components/StatusTimeline.vue'
 import CountdownText from '../../components/CountdownText.vue'
 import ConfirmDialog from '../../components/ConfirmDialog.vue'
+import OrderActions from '../../components/OrderActions.vue'
 const route = useRoute(),
   order = ref(null),
   cancelDialog = ref(false),
@@ -53,14 +54,13 @@ onMounted(load)
         <div class="actions">
           <router-link v-if="order.status === 0" :to="`/pay/${order.orderNo}`" class="button"
             >去付款</router-link
-          ><el-button
-            v-if="[0, 1].includes(order.status)"
-            :disabled="busy"
-            @click="cancelDialog = true"
+          ><el-button v-if="order.status === 0" :disabled="busy" @click="cancelDialog = true"
             >取消订单</el-button
           ><el-button v-if="order.status === 3" type="primary" :loading="busy" @click="receive"
             >确认收货</el-button
-          ><el-button :disabled="busy" @click="load">刷新状态</el-button>
+          ><OrderActions :order="order" @changed="load" /><el-button :disabled="busy" @click="load"
+            >刷新状态</el-button
+          >
         </div>
       </section>
       <div class="order-detail-columns">
@@ -93,7 +93,12 @@ onMounted(load)
           <ImageWithFallback :src="item.image" :alt="item.title" />
           <div>
             <strong>{{ item.title }}</strong>
-            <p>{{ item.spec }}</p>
+            <p>
+              {{ item.spec
+              }}<span v-if="petSnapshotName(item.petSnapshot)">
+                · 给{{ petSnapshotName(item.petSnapshot) }}</span
+              >
+            </p>
           </div>
           <MoneyText :value="item.price" /><span>× {{ item.quantity }}</span
           ><MoneyText :value="item.amount" />

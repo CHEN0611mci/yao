@@ -8,6 +8,8 @@ import MemberNav from '../../components/MemberNav.vue'
 import OrderCard from '../../components/OrderCard.vue'
 import AsyncState from '../../components/AsyncState.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import OrderActions from '../../components/OrderActions.vue'
+const keyword = ref('')
 const route = useRoute(),
   router = useRouter(),
   page = ref({ list: [], total: 0 }),
@@ -16,15 +18,20 @@ const route = useRoute(),
 let generation = 0
 const load = () =>
   run(async () => {
+    keyword.value = String(route.query.keyword || '')
     const id = ++generation,
       pageNum = Math.max(1, Number(route.query.pageNum) || 1),
       status = String(route.query.status || 'all')
     const data =
       status === 'cancelled'
-        ? await cancelledPage(api.list, pageNum)
+        ? await cancelledPage(
+            (params) => api.list({ ...params, keyword: route.query.keyword }),
+            pageNum,
+          )
         : await api.list({
             pageNum,
             pageSize: 10,
+            keyword: route.query.keyword,
             status: /^\d$/.test(status) ? Number(status) : undefined,
           })
     if (id === generation) page.value = data
@@ -49,13 +56,24 @@ watch(() => route.query, load, { immediate: true })
     <div>
       <el-tabs
         :model-value="String(route.query.status || 'all')"
-        @update:model-value="router.push({ query: { status: $event } })"
-        ><el-tab-pane
-          v-for="tab in orderTabs"
-          :key="tab[0]"
-          :name="tab[0]"
-          :label="tab[1]" /></el-tabs
-      ><AsyncState :loading="loading" :error="error" @retry="load"
+        @update:model-value="router.push({ query: { ...route.query, pageNum: 1, status: $event } })"
+        ><el-tab-pane v-for="tab in orderTabs" :key="tab[0]" :name="tab[0]" :label="tab[1]"
+      /></el-tabs>
+      <form
+        class="order-search"
+        @submit.prevent="
+          router.push({ query: { ...route.query, keyword: keyword.trim(), pageNum: 1 } })
+        "
+      >
+        <el-input
+          v-model="keyword"
+          placeholder="搜索订单号或商品名称"
+          aria-label="搜索订单"
+          clearable
+          maxlength="100"
+        /><el-button native-type="submit">搜索订单</el-button>
+      </form>
+      <AsyncState :loading="loading" :error="error" @retry="load"
         ><div v-if="page.list?.length" class="stack">
           <OrderCard v-for="order in page.list" :key="order.orderNo" :order="order"
             ><el-button
@@ -64,8 +82,8 @@ watch(() => route.query, load, { immediate: true })
               :loading="busy"
               @click="receive(order)"
               >确认收货</el-button
-            ></OrderCard
-          >
+            ><OrderActions :order="order" @changed="load"
+          /></OrderCard>
         </div>
         <EmptyState
           v-else

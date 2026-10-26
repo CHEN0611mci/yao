@@ -20,6 +20,7 @@ import com.ruoyi.mall.dto.LoginResponse;
 import com.ruoyi.mall.dto.MemberLoginRequest;
 import com.ruoyi.mall.dto.MemberRegisterRequest;
 import com.ruoyi.mall.dto.MemberUpdateRequest;
+import com.ruoyi.mall.dto.PasswordChangeRequest;
 import com.ruoyi.mall.mapper.PetMemberMapper;
 
 /**
@@ -141,6 +142,21 @@ public class MemberService
             throw new ForbiddenException("会员不存在");
         }
         return member;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(Long memberId, PasswordChangeRequest request)
+    {
+        rateLimiter.check("member-password", String.valueOf(memberId), 5, 600);
+        PetMember member = requireMember(memberId);
+        if (!SecurityUtils.matchesPassword(request.oldPassword(), member.getPassword()))
+            throw new BizException(ErrorCode.PET_2002, "原密码不正确");
+        if (request.oldPassword().equals(request.newPassword()))
+            throw new BizException(ErrorCode.PET_1001, "新密码不能与原密码相同");
+        if (memberMapper.changePassword(memberId, member.getPassword(),
+                SecurityUtils.encryptPassword(request.newPassword())) != 1)
+            throw new BizException(ErrorCode.PET_1001, "密码已变化，请重新登录");
+        memberTokenService.invalidateByMemberId(memberId);
     }
 
     private PetMember sanitize(PetMember member)

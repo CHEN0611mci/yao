@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-26T18:16:50.720Z",
+  "requests": 20,
+  "success": 1,
+  "stockRejected": 19,
+  "stockAfterSale": 0,
+  "stockAfterCancel": 1,
+  "itemId": 13,
+  "note": "Dedicated synthetic SKU hidden after test; no seed inventory changed."
+}

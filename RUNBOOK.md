@@ -1,5 +1,15 @@
 # 萌宠优选 · 后端运行与验收手册（RUNBOOK）
 
+## 2026-10-27 修复版启动
+
+日常双击 `start-mall.bat`（`start-user-ui.bat` 同入口），访问 http://127.0.0.1:81/ 。入口启动已安装的本机 MySQL/Redis 服务或 PetMall 计划任务，等待 `/api/health` 数据库与缓存检查通过，再启动用户端。后端源码变化会自动构建，先安全停止本项目 JAR 进程以避免 Windows 锁文件。运行包已有构建，无须安装前端依赖。
+
+管理端生产构建用 `start-admin-runtime.bat` 在 http://127.0.0.1:80/ 启动，先启动商城后端。管理端重新构建先复制 `.env.example` 为 `.env.production`，设置 `VITE_APP_ENV=production`、`VITE_APP_BASE_API=/prod-api`。本机配置均不提交。
+
+换机先填写 `config/backend.env` 并安装运行环境。日常启动不要执行 `03_seed.sql`；本轮无表结构变更或数据重置。查看 `logs/console.log`、`logs/user-ui.err.log`，或 http://127.0.0.1:8080/api/health 排错。本地 MySQL 8 认证参数已通过配置传递，无须手写 JDBC 环境变量。
+
+详情见 `docs/修复记录-v1.1.0.md` 和 `user-ui/README.md`。以下保留原交接基线，历史验收数字不代表本轮结果。
+
 > 适用：Windows 10/11 + PowerShell 5.1+　｜　版本：v2.0　｜　更新：2026-10-19
 >
 > 本文是 `README.md` 的详细版，覆盖换机、数据库初始化、构建、启动、验收、重置和排错。

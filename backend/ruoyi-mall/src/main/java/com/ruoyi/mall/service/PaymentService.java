@@ -73,6 +73,11 @@ public class PaymentService
         PetPayment existing = paymentMapper.selectByIdempotencyKey(key);
         if (existing != null)
         {
+            if (!existing.getOrderNo().equals(request.orderNo())
+                    || existing.getAmount().compareTo(request.amount()) != 0)
+            {
+                throw new BizException(ErrorCode.PET_1002, "幂等键对应的订单或金额不一致");
+            }
             return response(existing, true);
         }
         PetOrder order = orderMapper.selectByOrderNo(request.orderNo());

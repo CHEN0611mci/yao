@@ -15,7 +15,32 @@ const pet = usePet(),
   model = reactive({})
 const { loading, error, run } = useTask(),
   { busy, act } = useAction()
-const load = () => run(() => pet.fetch())
+const archived = ref([]),
+  showArchived = ref(false)
+const load = () =>
+  run(async () => {
+    await pet.fetch()
+    archived.value = (await api.list(true)).filter((x) => x.status !== 0)
+  })
+async function restore(row) {
+  await act(async () => {
+    await api.update(row.id, { ...row, status: 0 })
+    await load()
+  }, '档案已恢复')
+}
+async function exportPets() {
+  await act(async () => {
+    const rows = await api.list(true)
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' }),
+    )
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '我的宠物档案.json'
+    link.click()
+    URL.revokeObjectURL(url)
+  })
+}
 const rules = {
   name: [
     { required: true, whitespace: true, message: '请输入宠物名' },
@@ -67,6 +92,7 @@ async function archive(row) {
       await api.archive(row.id)
       await pet.fetch()
     }, '档案已归档')
+  await load()
 }
 onMounted(load)
 </script>
@@ -77,6 +103,8 @@ onMounted(load)
       <h1>它的小档案</h1>
       <p>多了解一点，让每一份选择更贴心。最多可建立 5 个档案。</p>
     </div>
+    <el-button :loading="busy" @click="exportPets">导出档案</el-button>
+    <el-button @click="showArchived = !showArchived">已归档 {{ archived.length }}</el-button>
     <el-button type="primary" :disabled="pet.rows.length >= 5 || busy" @click="edit()"
       >＋ 新建档案</el-button
     >
@@ -94,7 +122,16 @@ onMounted(load)
         title="认识一下你的毛孩子"
         description="建好档案后，就能在商品页看到专属适配建议。"
         ><el-button type="primary" @click="edit()">建立第一个档案</el-button></EmptyState
-      ></AsyncState
+      >
+      <div v-if="showArchived" class="stack panel">
+        <h3>已归档档案</h3>
+        <p v-if="!archived.length">暂无已归档档案</p>
+        <PetCard v-for="row in archived" :key="row.id" :pet="row">
+          <el-button :disabled="busy || pet.rows.length >= 5" @click="restore(row)"
+            >恢复档案</el-button
+          >
+        </PetCard>
+      </div></AsyncState
     >
   </div>
   <el-dialog

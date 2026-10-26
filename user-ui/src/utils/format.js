@@ -20,6 +20,9 @@ export const parseSnapshot = (value) => {
     return {}
   }
 }
+export const petSnapshotName = (value) =>
+  parseSnapshot(value).name ||
+  (typeof value === 'string' && !value.trim().startsWith('{') ? value : '')
 export function messageTarget(value) {
   if (typeof value !== 'string') return '/orders'
   const match = value.match(/^\/(?:api\/)?orders\/([A-Za-z0-9_-]+)$/)

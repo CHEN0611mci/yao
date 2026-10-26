@@ -7,44 +7,39 @@ import ItemCard from '../../components/ItemCard.vue'
 import AsyncState from '../../components/AsyncState.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import Icon from '../../components/Icon.vue'
+import HomeBanners from '../../components/HomeBanners.vue'
+import * as homeApi from '../../api/home.js'
+const settings = ref({ banners: [], promises: [], hotKeywords: [] })
 const categories = ref([]),
   items = ref([]),
   { loading, error, run } = useTask()
 const load = () =>
   run(async () => {
-    const result = await Promise.all([api.categories(), api.recommend(8)])
+    const result = await Promise.all([api.categories(), api.recommend(8), homeApi.settings()])
     categories.value = result[0].filter((row) => !row.parentId)
     items.value = result[1] || []
+    settings.value = result[2]
   })
 onMounted(load)
 </script>
 <template>
-  <section class="hero">
-    <div class="hero-copy">
-      <span class="eyebrow"><i></i> GOOD DAYS WITH LITTLE PAWS</span>
-      <h1>它的小日常，<br />我们的大认真<span>。</span></h1>
-      <p>从第一口好粮，到每一次撒欢。<br />为毛孩子挑好物，也为陪伴添一点幸福。</p>
-      <router-link to="/items" class="button hero-button"
-        >发现它的心头好 <Icon name="ArrowRight" :size="18"
-      /></router-link>
-      <div class="hero-note"><span>✦</span> 用心挑选 · 按宠适配 · 快乐陪伴</div>
-    </div>
-    <div class="hero-art">
-      <span class="hero-sticker sticker-top">THEIR HAPPY PLACE <span>♡</span></span
-      ><img src="/images/companions.svg" alt="猫咪和狗狗并肩坐着的温暖插画" /><span
-        class="hero-sticker sticker-bottom"
-        >好好吃饭，好好长大。</span
-      >
-    </div>
-    <span class="hero-index">01 / EVERYDAY COMPANIONS</span>
-  </section>
+  <HomeBanners :banners="settings.banners" />
   <section class="promise-strip">
     <span><Icon name="Collection" />食品用品，一站挑选</span
     ><span><Icon name="Check" />宠物档案，适配更安心</span
     ><span><Icon name="Box" />陪它长大，照顾日常</span>
   </section>
   <AsyncState :loading="loading" :error="error" @retry="load"
-    ><section class="section">
+    ><div class="hot-keywords">
+      <strong>热门搜索</strong
+      ><router-link
+        v-for="term in settings.hotKeywords"
+        :key="term"
+        :to="{ path: '/search', query: { keyword: term } }"
+        >{{ term }}</router-link
+      >
+    </div>
+    <section class="section">
       <div class="section-heading">
         <div>
           <span class="eyebrow">A LITTLE OF EVERYTHING</span>
@@ -72,6 +67,9 @@ onMounted(load)
       </div>
       <EmptyState v-else title="好物正在准备中" description="稍后再来看看吧。" /></section
   ></AsyncState>
+  <section class="promise-strip service-promises">
+    <span v-for="text in settings.promises" :key="text"><Icon name="Check" />{{ text }}</span>
+  </section>
   <section class="pet-banner">
     <div>
       <span class="eyebrow">MADE FOR YOUR LITTLE ONE</span>

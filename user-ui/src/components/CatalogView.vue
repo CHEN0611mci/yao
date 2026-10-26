@@ -8,6 +8,17 @@ import SortBar from './SortBar.vue'
 import ItemCard from './ItemCard.vue'
 import AsyncState from './AsyncState.vue'
 import EmptyState from './EmptyState.vue'
+import PetSelector from './PetSelector.vue'
+import { usePet } from '../stores/pet.js'
+import { useMember } from '../stores/member.js'
+import { history, forget } from '../utils/search.js'
+const pet = usePet(),
+  member = useMember(),
+  searches = ref(history())
+function clearHistory(term) {
+  forget(term)
+  searches.value = history()
+}
 const props = defineProps({ search: Boolean })
 const route = useRoute(),
   router = useRouter(),
@@ -34,6 +45,8 @@ async function load() {
             'sort',
             'pageNum',
             'pageSize',
+            'onlyStock',
+            'petId',
           ].includes(key) && value !== '',
       ),
     )
@@ -73,6 +86,7 @@ function applyPrice() {
 }
 watch(() => route.query, load, { immediate: true })
 onMounted(() => {
+  if (member.loggedIn) pet.fetch().catch(() => {})
   api
     .categories()
     .then((data) => {
@@ -95,8 +109,32 @@ onMounted(() => {
       }}
     </p>
   </div>
+  <div v-if="props.search && searches.length" class="search-history panel">
+    <strong>最近搜索</strong>
+    <span v-for="term in searches" :key="term"
+      ><router-link :to="{ path: '/search', query: { keyword: term } }">{{ term }}</router-link
+      ><button :aria-label="`删除搜索 ${term}`" @click="clearHistory(term)">×</button></span
+    >
+    <el-button text @click="clearHistory()">清空历史</el-button>
+  </div>
   <FilterBar :model-value="route.query" :categories="categories" @change="change"
-    ><form class="filter-row price-filter" @submit.prevent="applyPrice">
+    ><div class="filter-row">
+      <strong>库存</strong
+      ><el-checkbox
+        :model-value="route.query.onlyStock === 'true'"
+        @change="change('onlyStock', $event ? 'true' : '')"
+        >仅看有货</el-checkbox
+      >
+    </div>
+    <div v-if="member.loggedIn && pet.rows.length" class="filter-row">
+      <strong>按宠物挑选</strong
+      ><PetSelector
+        :pets="pet.rows"
+        :model-value="Number(route.query.petId) || null"
+        @update:model-value="change('petId', $event)"
+      />
+    </div>
+    <form class="filter-row price-filter" @submit.prevent="applyPrice">
       <strong>价格区间</strong
       ><label
         ><span class="sr-only">最低价</span

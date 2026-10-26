@@ -30,6 +30,12 @@ public class PetProfileController
     @Autowired
     private PetProfileService petProfileService;
 
+    @GetMapping("/export")
+    public Result<List<PetMemberPet>> export()
+    {
+        return Result.success(petProfileService.list(MemberContext.require(), true));
+    }
+
     @GetMapping
     public Result<List<PetMemberPet>> list(
             @RequestParam(value = "includeArchived", defaultValue = "false") boolean includeArchived)

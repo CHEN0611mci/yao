@@ -15,6 +15,7 @@ param(
     [int]$Port = 0,
     [string]$MySqlPassword,
     [switch]$SkipBuild,
+    [switch]$Rebuild,
     [switch]$Foreground,
     [switch]$NoWait
 )
@@ -44,8 +45,23 @@ $jarCandidates = @(
     (Join-Path $Root 'dist\ruoyi-admin.jar'),
     (Join-Path $Root 'backend\ruoyi-admin\target\ruoyi-admin.jar')
 )
-$jar = $jarCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-if (-not $jar) {
+$jar = $jarCandidates | Where-Object { Test-Path -LiteralPath $_ } | Sort-Object { (Get-Item -LiteralPath $_).LastWriteTimeUtc } -Descending | Select-Object -First 1
+if ($jar) {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = $null
+    try {
+        $archive = [IO.Compression.ZipFile]::OpenRead($jar)
+        if (-not $archive.GetEntry('BOOT-INF/classes/application.yml')) { $Rebuild = $true }
+    } catch { $Rebuild = $true }
+    finally { if ($archive) { $archive.Dispose() } }
+}
+if (-not $SkipBuild -and $jar -and (Test-Path -LiteralPath (Join-Path $Root 'backend\pom.xml'))) {
+    $jarTime = (Get-Item -LiteralPath $jar).LastWriteTimeUtc
+    $newerSource = Get-ChildItem -LiteralPath (Join-Path $Root 'backend') -Recurse -File -Include *.java,*.xml,*.yml,*.properties |
+        Where-Object { $_.FullName -notmatch '\\target\\' -and $_.LastWriteTimeUtc -gt $jarTime } | Select-Object -First 1
+    if ($newerSource) { $Rebuild = $true }
+}
+if (-not $jar -or $Rebuild) {
     if ($SkipBuild) {
         Write-Bad '未找到 ruoyi-admin.jar，且指定了 -SkipBuild。'
         exit 1
@@ -57,6 +73,11 @@ if (-not $jar) {
         exit 1
     }
     Write-Step "从源码构建（$mvn）"
+    # Windows locks a running executable JAR; stop only this project's recorded process first.
+    if (Test-Path -LiteralPath (Join-Path $Root 'run\backend.pid')) {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'stop-backend.ps1') -Port $Port
+        if ($LASTEXITCODE -ne 0) { exit 1 }
+    }
     $oldJavaHome = $env:JAVA_HOME
     $env:JAVA_HOME = $java.Home
     Push-Location (Join-Path $Root 'backend')
@@ -68,7 +89,7 @@ if (-not $jar) {
         if ($oldJavaHome) { $env:JAVA_HOME = $oldJavaHome } else { Remove-Item Env:JAVA_HOME -ErrorAction SilentlyContinue }
     }
     if ($buildCode -ne 0) { Write-Bad "Maven 构建失败（exit=$buildCode）。"; exit 1 }
-    $jar = $jarCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    $jar = $jarCandidates | Where-Object { Test-Path -LiteralPath $_ } | Sort-Object { (Get-Item -LiteralPath $_).LastWriteTimeUtc } -Descending | Select-Object -First 1
     if (-not $jar) { Write-Bad '构建完成但未找到 ruoyi-admin.jar。'; exit 1 }
 }
 $jar = (Resolve-Path -LiteralPath $jar).Path
@@ -86,8 +107,17 @@ if (Test-Path -LiteralPath $pidFile) {
     if ($oldPid -gt 0) {
         $old = Get-Process -Id $oldPid -ErrorAction SilentlyContinue
         if ($old) {
-            Write-Warn "后端已在运行（PID=$oldPid）。如需重启，先运行 stop-backend.bat。"
-            exit 0
+            $oldCommand = (Get-CimInstance Win32_Process -Filter "ProcessId=$oldPid" -ErrorAction SilentlyContinue).CommandLine
+            if ($oldCommand -match 'ruoyi-admin\.jar') {
+                if ($Rebuild -or $old.StartTime.ToUniversalTime() -lt (Get-Item -LiteralPath $jar).LastWriteTimeUtc) {
+                    Write-Step '检测到新构建，重启本项目后端'
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'stop-backend.ps1') -Port $Port
+                    if ($LASTEXITCODE -ne 0) { exit 1 }
+                } else {
+                Write-Warn "后端已在运行（PID=$oldPid）。如需重启，先运行 stop-backend.bat。"
+                exit 0
+                }
+            }
         }
     }
     Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
@@ -105,6 +135,7 @@ $env:DB_NAME = Get-ConfigValue $Config 'DB_NAME' 'shop'
 $env:DB_USERNAME = Get-ConfigValue $Config 'DB_USERNAME' 'root'
 $env:DB_PASSWORD = $DbPassword
 $env:DB_USE_SSL = Get-ConfigValue $Config 'DB_USE_SSL' 'false'
+$env:DB_ALLOW_PUBLIC_KEY_RETRIEVAL = Get-ConfigValue $Config 'DB_ALLOW_PUBLIC_KEY_RETRIEVAL' 'true'
 $env:REDIS_HOST = Get-ConfigValue $Config 'REDIS_HOST' '127.0.0.1'
 $env:REDIS_PORT = Get-ConfigValue $Config 'REDIS_PORT' '6379'
 $env:REDIS_DATABASE = Get-ConfigValue $Config 'REDIS_DATABASE' '0'
@@ -149,12 +180,13 @@ for ($i = 0; $i -lt 120; $i++) {
     if ($p.HasExited) { break }
     if (-not (Test-TcpPort -Port $Port -TimeoutMs 300)) { continue }
     if ($curl) {
-        $code = (& $curl.Source -sS --noproxy '*' --max-time 3 -o NUL -w '%{http_code}' "http://127.0.0.1:$Port/captchaImage" 2>$null) -join ''
+        $code = (& $curl.Source -sS --noproxy '*' --max-time 3 -o NUL -w '%{http_code}' "http://127.0.0.1:$Port/api/health" 2>$null) -join ''
         if ($code.Trim() -eq '200') { $ready = $true; break }
     } else {
-        Start-Sleep -Seconds 2
-        $ready = $true
-        break
+        try {
+            $health = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/api/health" -TimeoutSec 3
+            if ($health.code -eq 200) { $ready = $true; break }
+        } catch { }
     }
 }
 

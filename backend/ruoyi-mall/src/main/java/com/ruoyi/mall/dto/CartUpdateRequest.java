@@ -11,7 +11,8 @@ import jakarta.validation.constraints.Min;
 public record CartUpdateRequest(
         @Min(1) @Max(99) Integer quantity,
         Integer checked,
-        Long petId
+        Long petId,
+        Boolean clearPet
 )
 {
 }

@@ -11,7 +11,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </sql>
 
     <sql id="publicWhere">
-        i.del_flag = '0' AND i.status = 1 AND i.audit_status = 2
+        i.del_flag = '0' AND i.status = 1 AND i.audit_status = 2 AND i.is_prescription = 0
         <if test="keyword != null and keyword != ''">
             AND (i.title LIKE CONCAT('%', #{keyword}, '%')
                  OR i.subtitle LIKE CONCAT('%', #{keyword}, '%')
@@ -29,6 +29,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </if>
         <if test="minPrice != null">AND i.price_min &gt;= #{minPrice}</if>
         <if test="maxPrice != null">AND i.price_min &lt;= #{maxPrice}</if>
+        <if test="onlyStock == true">
+            AND EXISTS (SELECT 1 FROM pet_item_sku s WHERE s.item_id = i.id AND s.status = 1 AND s.stock &gt; 0)
+        </if>
     </sql>
 
     <select id="selectPublicList" resultType="com.ruoyi.mall.domain.PetItem">
@@ -72,7 +75,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectRecommend" resultType="com.ruoyi.mall.domain.PetItem">
         SELECT <include refid="columns"/> FROM pet_item
-        WHERE del_flag = '0' AND status = 1 AND audit_status = 2
+        WHERE del_flag = '0' AND status = 1 AND audit_status = 2 AND is_prescription = 0
         ORDER BY sales DESC, create_time DESC, id DESC
         LIMIT #{limit}
     </select>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCart } from '../../stores/cart.js'
 import { usePet } from '../../stores/pet.js'
@@ -22,6 +22,29 @@ const allChecked = computed(
     cart.rows.filter((row) => row.valid).every((row) => row.checked === 1),
 )
 const merchants = computed(() => new Set(cart.checked.map((row) => row.item?.merchantId)).size)
+const petFilter = ref(null)
+const visibleRows = computed(() =>
+  petFilter.value ? cart.rows.filter((x) => x.petId === petFilter.value) : cart.rows,
+)
+async function clearInvalid() {
+  const rows = cart.rows.filter((x) => !x.valid)
+  if (!rows.length || !(await confirm(`清理 ${rows.length} 件失效商品？`))) return
+  await act(async () => {
+    for (const row of rows) await api.remove(row.id)
+    await cart.fetch()
+  }, '失效商品已清理')
+}
+async function removeChecked() {
+  const rows = cart.checked
+  if (!rows.length || !(await confirm(`移除已选的 ${rows.length} 件商品？`))) return
+  await act(async () => {
+    try {
+      for (const row of rows) await api.remove(row.id)
+    } finally {
+      await cart.fetch()
+    }
+  }, '已移除所选商品')
+}
 const load = () =>
   run(async () => {
     await cart.fetch()
@@ -61,6 +84,13 @@ onMounted(load)
     </h1>
     <p>喜欢的都在这里，再确认一下，就可以带回家。</p>
   </div>
+  <div class="cart-tools panel">
+    <span>按宠物查看</span><PetSelector :pets="pet.rows" v-model="petFilter" />
+    <el-button :disabled="!cart.checked.length || busy" @click="removeChecked">移除所选</el-button
+    ><el-button :loading="busy" :disabled="!cart.rows.some((x) => !x.valid)" @click="clearInvalid"
+      >清理失效商品</el-button
+    >
+  </div>
   <div v-if="cart.mergeErrors.length || cart.guestRows.length" class="panel merge-notice">
     <h3>部分游客购物车商品还未合并</h3>
     <p v-for="(row, index) in cart.mergeErrors" :key="index">{{ row.title }}：{{ row.error }}</p>
@@ -74,7 +104,7 @@ onMounted(load)
         ><span>商品信息</span><span>单价 / 数量</span><span>小计</span>
       </div>
       <article
-        v-for="row in cart.rows"
+        v-for="row in visibleRows"
         :key="row.id"
         class="panel cart-row"
         :class="{ invalid: !row.valid }"
@@ -99,9 +129,9 @@ onMounted(load)
             v-if="pet.rows.length"
             :model-value="row.petId"
             :pets="pet.rows"
-            :clearable="false"
+            :clearable="true"
             :disabled="busy"
-            @update:model-value="change(row, { petId: $event })"
+            @update:model-value="change(row, $event ? { petId: $event } : { clearPet: true })"
           />
         </div>
         <div class="cart-quantity">
@@ -127,7 +157,7 @@ onMounted(load)
       <div class="cart-checkout panel">
         <el-checkbox :model-value="allChecked" :disabled="busy" @change="selectAll"
           >全选</el-checkbox
-        ><span class="muted">已选 {{ cart.checked.length }} 件好物</span>
+        ><span class="muted">全部购物车已选 {{ cart.checked.length }} 件好物（含筛选外商品）</span>
         <div class="cart-checkout-right">
           <span class="muted">运费与实付金额将在结算时确认</span
           ><el-button

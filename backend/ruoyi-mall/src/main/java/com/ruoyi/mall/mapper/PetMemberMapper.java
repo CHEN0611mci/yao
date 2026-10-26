@@ -23,6 +23,8 @@ public interface PetMemberMapper
 
     int updateProfile(PetMember member);
 
+    int changePassword(@Param("id") Long id, @Param("previous") String previous, @Param("password") String password);
+
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
 
     List<PetMember> selectList(@Param("keyword") String keyword, @Param("status") Integer status);

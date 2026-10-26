@@ -68,13 +68,33 @@ public class OrderService
     @Autowired
     private MessageService messageService;
 
+    @Autowired private AddressService addressService;
+
     public PageResult<PetOrder> memberList(Long memberId, Integer status, int pageNum, int pageSize)
     {
+        return memberList(memberId, status, null, pageNum, pageSize);
+    }
+
+    public PageResult<PetOrder> memberList(Long memberId, Integer status, String keyword, int pageNum, int pageSize)
+    {
         PageHelper.startPage(pageNum, pageSize);
-        List<PetOrder> orders = orderMapper.selectMemberOrders(memberId, status);
+        List<PetOrder> orders = orderMapper.selectMemberOrders(memberId, status, StringUtils.trim(keyword));
         PageInfo<PetOrder> pageInfo = new PageInfo<>(orders);
         attachItems(pageInfo.getList());
         return PageResult.of(pageInfo);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void changeAddress(Long memberId, String orderNo, Long addressId)
+    {
+        PetOrder order = orderMapper.selectByOrderNoAndMember(orderNo, memberId);
+        if (order == null) throw new BizException(ErrorCode.PET_4003);
+        var address = addressService.getOwned(memberId, addressId);
+        JSONObject snapshot = JSON.parseObject(JSON.toJSONString(address));
+        snapshot.put("addressId", address.getId());
+        if (orderMapper.changeAddress(orderNo, memberId, snapshot.toJSONString()) != 1)
+            throw new BizException(ErrorCode.PET_3002, "订单已发货或已关闭，无法修改地址");
+        messageService.notify(memberId, "ORDER", "订单收货地址已修改", "订单" + orderNo + "已更新收货地址。", "/orders/" + orderNo);
     }
 
     public PetOrder memberDetail(Long memberId, String orderNo)
@@ -180,6 +200,7 @@ public class OrderService
         {
             throw new ForbiddenException("无权操作该订单");
         }
+        if (alreadyShipped(order, request)) return new ShipResponse(orderNo, order.getStatus(), order.getShipTime(), request.company(), request.trackingNo());
         stateMachine.assertTransition(order.getStatus(), OrderStatus.PENDING_RECEIPT.getCode());
         String snapshot = appendLogistics(order.getReceiverSnapshot(), request.company(), request.trackingNo());
         int rows = orderMapper.updateShipInfo(orderNo, merchantId, snapshot);
@@ -205,6 +226,7 @@ public class OrderService
         {
             throw new BizException(ErrorCode.PET_4003);
         }
+        if (alreadyShipped(order, request)) return new ShipResponse(orderNo, order.getStatus(), order.getShipTime(), request.company(), request.trackingNo());
         stateMachine.assertTransition(order.getStatus(), OrderStatus.PENDING_RECEIPT.getCode());
         String snapshot = appendLogistics(order.getReceiverSnapshot(), request.company(), request.trackingNo());
         int rows = orderMapper.updateShipInfo(orderNo, null, snapshot);
@@ -233,6 +255,7 @@ public class OrderService
         {
             throw new BizException(ErrorCode.PET_3002, "订单状态已变化，请刷新后重试");
         }
+        messageService.notify(memberId, "ORDER", "订单已完成", "订单" + orderNo + "已确认收货。", "/orders/" + orderNo);
         return new ConfirmResponse(orderNo, OrderStatus.COMPLETED.getCode(), new Date());
     }
 
@@ -270,6 +293,8 @@ public class OrderService
         {
             if (orderMapper.confirm(order.getOrderNo(), order.getMemberId()) > 0)
             {
+                messageService.notify(order.getMemberId(), "ORDER", "订单已自动确认收货",
+                        "订单" + order.getOrderNo() + "已达到自动确认收货时限。", "/orders/" + order.getOrderNo());
                 confirmed++;
             }
         }
@@ -321,6 +346,15 @@ public class OrderService
             stockService.rollback(item.getSkuId(), item.getQuantity(), order.getOrderNo(),
                     operator, remark);
         }
+    }
+
+    private boolean alreadyShipped(PetOrder order, ShipRequest request)
+    {
+        if (order.getStatus() != 3 && order.getStatus() != 4) return false;
+        JSONObject data = JSON.parseObject(order.getReceiverSnapshot());
+        JSONObject logistics = data == null ? null : data.getJSONObject("logistics");
+        return logistics != null && request.company().equals(logistics.getString("company"))
+                && request.trackingNo().equals(logistics.getString("trackingNo"));
     }
 
     private String appendLogistics(String snapshot, String company, String trackingNo)

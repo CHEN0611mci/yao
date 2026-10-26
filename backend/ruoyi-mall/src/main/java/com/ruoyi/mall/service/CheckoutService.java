@@ -48,6 +48,7 @@ import com.ruoyi.mall.mapper.PetOrderMapper;
 @Service
 public class CheckoutService
 {
+    @Autowired private CatalogPolicy catalogPolicy;
     private static final DateTimeFormatter ORDER_NO_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     @Autowired
@@ -133,6 +134,8 @@ public class CheckoutService
         PriceCalculator.CalcResult calc = priceCalculator.calculate(toPriceLines(lines),
                 configService.freightFreeThreshold(), configService.freightFee());
         String orderNo = nextOrderNo();
+        if (calc.payAmount().compareTo(configService.getDecimal("mall.order-max-amount", new BigDecimal("100000.00"))) > 0)
+            throw new BizException(ErrorCode.PET_1001, "订单金额超过单笔上限");
         Date expireAt = new Date(System.currentTimeMillis()
                 + configService.payTimeoutMinutes() * 60_000L);
 
@@ -298,6 +301,9 @@ public class CheckoutService
                 throw new BizException(ErrorCode.PET_3001, item.getTitle() + " 库存不足");
             }
         }
+        catalogPolicy.checkSale(item);
+        if (qty > configService.buyLimitDefault())
+            throw new BizException(ErrorCode.PET_3005, "超过单件商品限购数量");
         String petName = null;
         if (petId != null)
         {

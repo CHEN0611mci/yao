@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,6 +19,7 @@ import com.ruoyi.mall.dto.CancelResponse;
 import com.ruoyi.mall.dto.ConfirmResponse;
 import com.ruoyi.mall.dto.OrderSubmitResponse;
 import com.ruoyi.mall.dto.SubmitOrderRequest;
+import com.ruoyi.mall.dto.OrderAddressRequest;
 import com.ruoyi.mall.service.CheckoutService;
 import com.ruoyi.mall.service.OrderService;
 
@@ -46,12 +48,13 @@ public class OrderController
     @GetMapping
     public Result<PageResult<PetOrder>> list(
             @RequestParam(value = "status", required = false) Integer status,
+            @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
             @RequestParam(value = "pageSize", defaultValue = "10") int pageSize)
     {
         int safePageNum = Math.max(pageNum, 1);
         int safePageSize = Math.min(Math.max(pageSize, 1), 100);
-        return Result.success(orderService.memberList(MemberContext.require(), status, safePageNum, safePageSize));
+        return Result.success(orderService.memberList(MemberContext.require(), status, keyword, safePageNum, safePageSize));
     }
 
     @GetMapping("/{orderNo}")
@@ -72,5 +75,12 @@ public class OrderController
     public Result<ConfirmResponse> confirm(@PathVariable("orderNo") String orderNo)
     {
         return Result.success(orderService.confirm(MemberContext.require(), orderNo));
+    }
+
+    @PutMapping("/{orderNo}/address")
+    public Result<Void> address(@PathVariable("orderNo") String orderNo, @Valid @RequestBody OrderAddressRequest request)
+    {
+        orderService.changeAddress(MemberContext.require(), orderNo, request.addressId());
+        return Result.success();
     }
 }

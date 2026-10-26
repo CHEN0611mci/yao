@@ -27,6 +27,14 @@
 
 ## 快速开始
 
+### 2026-10-27 修复版入口
+
+双击 **`start-mall.bat`**（兼容入口 `start-user-ui.bat`），等待检查完成后打开 [用户商城](http://127.0.0.1:81/)。脚本依次检查 MySQL、Redis、后端健康和前端接口代理。
+
+本轮新增修改密码、订单搜索/改地址/再次购买、购物车清理和宠物解绑、宠物恢复/导出、首页运营配置、反馈、自动关单与确认收货；修复分类分页、过期支付和回调幂等校验。详情见 [修复记录](docs/修复记录-v1.1.0.md)。
+
+管理端已构建时运行 `start-admin-runtime.bat`，访问 [管理端](http://127.0.0.1:80/)。下面的 npm 命令用于开发；首次安装才需要初始化数据库，日常运行不要重置数据。
+
 后端（需 JDK 17、MySQL 8、Redis 7），在项目根目录执行：
 
 ```powershell
@@ -63,7 +71,7 @@ npm.cmd run build:prod        # 生产构建 → dist/
 - 启动：双击 `start-user-ui.bat`，或进入 `user-ui` 执行 `npm.cmd ci`、`npm.cmd run dev`；演示账号 `member1/member123`、`member2/member123`
 - 功能：商品浏览筛选、会员账号、宠物档案、收货地址、消息、游客车合并、服务端结算、幂等下单、沙箱支付、订单与收货。
 - 校验：在 `user-ui` 执行 `npm.cmd test`、`npm.cmd run check`、`npm.cmd run build`；真实接口验收与浏览器记录见 `verify/user-ui/`；运行、部署及已知边界见 `user-ui/README.md`。
-- 交付包：[用户端 v1.0.0 ZIP](docs/05-交付包/user-ui-v1.0.0.zip)（包含源码、生产构建和验收资料）；[下载与使用说明](docs/05-交付包/README.md)。
+- 最新交付包：[完整商城修复版 v2.1.0 ZIP](docs/05-交付包/pet-mall-v2.1.0.zip)（后端 JAR、前后台构建、源码及验收）；[下载与使用说明](docs/05-交付包/README.md)。旧 v1.0.0 仅作历史快照。
 
 更多说明见 `RUNBOOK.md`；交接包原始说明已归档到 `docs/后端交接包_交付说明.md`。
 
@@ -71,10 +79,8 @@ npm.cmd run build:prod        # 生产构建 → dist/
 
 - 主分支：`master`（整合后的唯一主线）；历史保留协作者的全部提交：平铺化合并 `d439bb5`（双父 `a5e86d5` + `4392d2a`），以及随后 `c71e738`（用户端前端详细设计 v1.0）的合并
 - 远端两个分支 `master` / `main` 均指向同一条主线（GitHub 上 `main` 仅作兼容保留）
-- 远端：
-  - `origin` → Gitee `https://gitee.com/yee_8_0/yao.git`
-  - `github` → GitHub `https://github.com/CHEN0611mci/yao.git`
-- 日常同步：`git push origin master && git push github master`
+- 当前远端：`origin` → GitHub `https://github.com/CHEN0611mci/yao.git`
+- 日常同步：`git push origin master`
 - 只跟踪项目源码 / SQL / 文档 / 脚本，及 `.gitattributes`、`.gitignore` 等必要文件
 - 本机环境与辅助文件不入库：`dev-redis/`、`msi-logs/`、`mysql-backup/`、`release/`、`ch09_png/`、课程笔记、安装日志等
 - `node_modules/`、`target/`、`*.jar`、`.env*`、`config/backend.env`、日志与备份由 `.gitignore` 排除

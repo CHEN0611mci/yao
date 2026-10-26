@@ -23,7 +23,11 @@ public interface PetOrderMapper
 
     int insert(PetOrder order);
 
-    List<PetOrder> selectMemberOrders(@Param("memberId") Long memberId, @Param("status") Integer status);
+    List<PetOrder> selectMemberOrders(@Param("memberId") Long memberId, @Param("status") Integer status,
+            @Param("keyword") String keyword);
+
+    int changeAddress(@Param("orderNo") String orderNo, @Param("memberId") Long memberId,
+            @Param("snapshot") String snapshot);
 
     List<PetOrder> selectAdminOrders(Map<String, Object> query);
 

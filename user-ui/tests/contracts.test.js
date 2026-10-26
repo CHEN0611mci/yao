@@ -2,8 +2,21 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { unwrap } from '../src/utils/response.js'
 import { safeRedirect } from '../src/utils/auth.js'
-import { messageTarget, parseSnapshot, statuses, orderItems } from '../src/utils/format.js'
+import {
+  messageTarget,
+  parseSnapshot,
+  statuses,
+  orderItems,
+  petSnapshotName,
+} from '../src/utils/format.js'
 import { cancelledPage } from '../src/utils/orders.js'
+
+test('pet snapshot names support both historical text and structured snapshots', () => {
+  assert.equal(petSnapshotName('小猫'), '小猫')
+  assert.equal(petSnapshotName('{"name":"小狗"}'), '小狗')
+  assert.equal(petSnapshotName(null), '')
+  assert.equal(petSnapshotName('{broken'), '')
+})
 
 test('unwrap handles HTTP and business errors, trace IDs, and duplicate order success', () => {
   assert.deepEqual(unwrap({ code: 200, data: { total: 1 } }), { total: 1 })
@@ -27,7 +40,8 @@ test('unwrap handles HTTP and business errors, trace IDs, and duplicate order su
     () => unwrap({}, 429, '7'),
     (error) => error.retryAfter === 7,
   )
-  assert.throws(() => unwrap('<html>bad gateway</html>', 502), /服务暂时不可用/)
+  assert.throws(() => unwrap('<html>bad gateway</html>', 502), /后端代理配置/)
+  assert.throws(() => unwrap('', 503), /start-mall\.bat/)
 })
 
 test('login redirects and notification destinations reject external or unsafe URLs', () => {

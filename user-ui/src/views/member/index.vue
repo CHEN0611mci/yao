@@ -11,6 +11,7 @@ import { useTask, useAction, confirm } from '../../composables/useTask.js'
 import MemberNav from '../../components/MemberNav.vue'
 import AsyncState from '../../components/AsyncState.vue'
 import ImageWithFallback from '../../components/ImageWithFallback.vue'
+import PasswordForm from '../../components/PasswordForm.vue'
 const member = useMember(),
   route = useRoute(),
   router = useRouter(),
@@ -105,10 +106,10 @@ onMounted(load)
               ><div class="security-row">
                 <div>
                   <h3>修改密码</h3>
-                  <p class="muted">账号安全功能将在后续版本开放。</p>
+                  <p class="muted">修改后需要重新登录，其他设备的登录也会失效。</p>
                 </div>
-                <el-button disabled>暂未开放</el-button>
               </div>
+              <PasswordForm />
               <div class="security-row">
                 <div>
                   <h3>退出登录</h3>
