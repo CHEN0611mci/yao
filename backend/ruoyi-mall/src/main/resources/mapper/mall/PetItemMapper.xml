@@ -116,6 +116,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         WHERE id = #{id} AND del_flag = '0'
     </update>
 
+    <select id="selectForUpdate" resultType="com.ruoyi.mall.domain.PetItem">
+        SELECT * FROM pet_item WHERE id = #{id} AND del_flag = '0' FOR UPDATE
+    </select>
+
     <update id="incrementSales">
         UPDATE pet_item SET sales = sales + #{quantity}, update_time = NOW()
         WHERE id = #{id} AND del_flag = '0'

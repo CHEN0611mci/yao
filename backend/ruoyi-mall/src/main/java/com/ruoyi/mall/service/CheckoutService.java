@@ -249,6 +249,18 @@ public class CheckoutService
             }
         }
         List<CheckoutLine> lines = new ArrayList<>();
+        // All writers acquire product rows first, then SKU rows, in ascending ID order.
+        // Lock every row before updating sales: interleaving SKU -> product -> SKU
+        // deadlocks even when two baskets use the same SKU order.
+        Set<Long> itemIds = new java.util.TreeSet<>();
+        for (Long skuId : merged.keySet())
+        {
+            PetItemSku sku = skuMapper.selectById(skuId);
+            if (sku == null) throw new BizException(ErrorCode.PET_3003, "SKU不存在或已下架");
+            itemIds.add(sku.getItemId());
+        }
+        for (Long itemId : itemIds) itemMapper.selectForUpdate(itemId);
+        for (Long skuId : new java.util.TreeSet<>(merged.keySet())) skuMapper.selectForUpdate(skuId);
         for (OrderLineRequest request : merged.values())
         {
             CheckoutLine line = buildLine(memberId, request.skuId(), request.quantity(),
@@ -264,7 +276,9 @@ public class CheckoutService
     private CheckoutLine buildLine(Long memberId, Long skuId, Integer quantity, Long petId,
             List<String> warnings, boolean strict)
     {
-        PetItemSku sku = skuMapper.selectById(skuId);
+        // Locking reads see the latest committed price/status/stock after waiting;
+        // ordinary reads can still see an earlier REPEATABLE READ snapshot.
+        PetItemSku sku = strict ? skuMapper.selectForUpdate(skuId) : skuMapper.selectById(skuId);
         if (sku == null || sku.getStatus() == null || sku.getStatus() != 1)
         {
             if (strict)
@@ -274,8 +288,10 @@ public class CheckoutService
             warnings.add("SKU[" + skuId + "]已失效");
             return null;
         }
-        PetItem item = itemMapper.selectSellableById(sku.getItemId());
-        if (item == null)
+        PetItem item = strict ? itemMapper.selectForUpdate(sku.getItemId())
+                : itemMapper.selectSellableById(sku.getItemId());
+        if (item == null || !Integer.valueOf(1).equals(item.getStatus())
+                || !Integer.valueOf(2).equals(item.getAuditStatus()))
         {
             if (strict)
             {

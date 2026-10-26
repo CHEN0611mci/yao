@@ -193,7 +193,9 @@ public class ItemService
     @Transactional(rollbackFor = Exception.class)
     public PetItem update(Long itemId, ItemSaveRequest request, Long merchantId, boolean admin)
     {
-        PetItem item = admin ? itemMapper.selectById(itemId) : requireOwned(itemId, merchantId);
+        PetItem item = itemMapper.selectForUpdate(itemId);
+        if (item != null && !admin && !item.getMerchantId().equals(merchantId))
+            throw new ForbiddenException("无权操作该商品");
         if (item == null)
         {
             throw new BizException(ErrorCode.PET_3003);

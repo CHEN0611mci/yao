@@ -1,7 +1,7 @@
 萌宠优选 · 宠物商城功能完善版
-Version: v2.2.0 (user-ui v1.2.0)
+Version: v2.2.1 (user-ui v1.2.0)
 Build date: 2026-10-27
 Entry: start-mall.bat
-Validation: verify/member-features, verify/repair, verify/user-ui
+Validation: verify/multi-sku, verify/member-features, verify/repair, verify/user-ui
 Package JAR: dist/ruoyi-admin.jar
 Source JAR: backend/ruoyi-admin/target/ruoyi-admin.jar

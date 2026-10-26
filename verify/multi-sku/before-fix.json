@@ -1,0 +1,103 @@
+{
+  "at": "2026-10-26T20:12:55.474Z",
+  "productIds": [
+    26,
+    27
+  ],
+  "checks": [
+    {
+      "name": "2 SKU reversed submit",
+      "total": 12,
+      "passed": 5
+    },
+    {
+      "name": "2 SKU concurrent cancel",
+      "total": 5,
+      "passed": 5
+    },
+    {
+      "name": "4 SKU reversed submit",
+      "total": 12,
+      "passed": 4
+    },
+    {
+      "name": "4 SKU concurrent cancel",
+      "total": 4,
+      "passed": 3
+    },
+    {
+      "name": "item 26 stock restored",
+      "passed": true
+    },
+    {
+      "name": "item 27 stock restored",
+      "passed": true
+    }
+  ],
+  "failures": [
+    {
+      "phase": "2 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "2 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "2 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "2 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "2 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "2 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "2 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "4 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "4 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "4 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "4 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "4 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "4 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "4 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "4 SKU submit",
+      "code": "PET-5001"
+    },
+    {
+      "phase": "cancel",
+      "code": "PET-5001"
+    }
+  ]
+}

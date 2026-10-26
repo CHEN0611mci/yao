@@ -20,6 +20,8 @@ public interface PetItemMapper
 
     PetItem selectById(@Param("id") Long id);
 
+    PetItem selectForUpdate(@Param("id") Long id);
+
     PetItem selectSellableById(@Param("id") Long id);
 
     List<PetItem> selectRecommend(@Param("limit") int limit);

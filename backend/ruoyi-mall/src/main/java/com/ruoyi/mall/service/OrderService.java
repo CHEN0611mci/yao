@@ -11,6 +11,9 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.github.pagehelper.PageHelper;
@@ -70,6 +73,7 @@ public class OrderService
 
     @Autowired private AddressService addressService;
     @Autowired private MemberWriteLock memberLock;
+    @Autowired private PlatformTransactionManager transactionManager;
 
     public PageResult<PetOrder> memberList(Long memberId, Integer status, int pageNum, int pageSize)
     {
@@ -264,21 +268,25 @@ public class OrderService
     /**
      * 超时未支付关单，逐个订单回滚预占库存。
      */
-    @Transactional(rollbackFor = Exception.class)
     public int closeTimeoutOrders()
     {
         int closed = 0;
         List<PetOrder> orders = orderMapper.selectTimeoutOrders(100);
+        // Release SKU locks after each order. A batch-wide transaction can hold a
+        // higher SKU from one order while waiting for a lower SKU in the next.
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         for (PetOrder order : orders)
         {
-            if (orderMapper.close(order.getOrderNo(), "支付超时自动关闭") > 0)
-            {
+            Boolean changed = transaction.execute(status -> {
+                if (orderMapper.close(order.getOrderNo(), "支付超时自动关闭") == 0) return false;
                 rollbackStock(order, "支付超时关单", "system:timeout");
                 messageService.notify(order.getMemberId(), "ORDER", "订单已关闭",
                         "订单" + order.getOrderNo() + "因超时未支付已自动关闭。",
                         "/pages/order/detail?orderNo=" + order.getOrderNo());
-                closed++;
-            }
+                return true;
+            });
+            if (Boolean.TRUE.equals(changed)) closed++;
         }
         return closed;
     }
@@ -343,6 +351,8 @@ public class OrderService
     private void rollbackStock(PetOrder order, String remark, String operator)
     {
         List<PetOrderItem> items = orderItemMapper.selectByOrderId(order.getId());
+        // Match checkout's SKU order, including historical orders whose lines were reversed.
+        items.sort(java.util.Comparator.comparing(PetOrderItem::getSkuId));
         for (PetOrderItem item : items)
         {
             stockService.rollback(item.getSkuId(), item.getQuantity(), order.getOrderNo(),
