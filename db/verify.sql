@@ -10,17 +10,17 @@ USE `shop`;
 -- ----------------------------
 -- A. 库与表结构
 -- ----------------------------
-SELECT 'A01 库表总数 = 45（若依 31 + 业务 14）' AS check_item,
-       IF(COUNT(*) = 45, 'PASS', CONCAT('FAIL(', COUNT(*), ')')) AS result
+SELECT 'A01 库表总数 = 48（若依 31 + 业务 17）' AS check_item,
+       IF(COUNT(*) = 48, 'PASS', CONCAT('FAIL(', COUNT(*), ')')) AS result
 FROM information_schema.tables WHERE table_schema = 'shop'
 UNION ALL
-SELECT 'A02 业务表数 = 14',
-       IF(COUNT(*) = 14, 'PASS', CONCAT('FAIL(', COUNT(*), ')'))
+SELECT 'A02 业务表数 = 17',
+       IF(COUNT(*) = 17, 'PASS', CONCAT('FAIL(', COUNT(*), ')'))
 FROM information_schema.tables
 WHERE table_schema = 'shop' AND LEFT(table_name, 4) = 'pet_'
 UNION ALL
 SELECT 'A03 业务表字符集均为 utf8mb4_general_ci',
-       IF(COUNT(*) = 14, 'PASS', CONCAT('FAIL(', COUNT(*), ')'))
+       IF(COUNT(*) = 17, 'PASS', CONCAT('FAIL(', COUNT(*), ')'))
 FROM information_schema.tables
 WHERE table_schema = 'shop' AND LEFT(table_name, 4) = 'pet_'
   AND table_collation = 'utf8mb4_general_ci'
@@ -37,8 +37,8 @@ SELECT 'A05 CHECK 约束数 = 5',
 FROM information_schema.table_constraints
 WHERE table_schema = 'shop' AND constraint_type = 'CHECK'
 UNION ALL
-SELECT 'A06 表注释完整（14 张均有注释）',
-       IF(COUNT(*) = 14, 'PASS', CONCAT('FAIL(', COUNT(*), ')'))
+SELECT 'A06 表注释完整（17 张均有注释）',
+       IF(COUNT(*) = 17, 'PASS', CONCAT('FAIL(', COUNT(*), ')'))
 FROM information_schema.tables
 WHERE table_schema = 'shop' AND LEFT(table_name, 4) = 'pet_'
   AND table_comment <> '';

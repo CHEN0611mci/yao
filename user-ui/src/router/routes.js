@@ -90,6 +90,12 @@ export default [
     meta: { title: '收货地址', requiresAuth: true },
   },
   {
+    path: '/member/favorites',
+    name: 'MemberFavorites',
+    component: () => import('../views/member/favorites.vue'),
+    meta: { title: '我的收藏', requiresAuth: true },
+  },
+  {
     path: '/messages',
     name: 'Messages',
     component: () => import('../views/message/index.vue'),

@@ -78,7 +78,7 @@ function Test-TcpPort {
 function Get-JavaVersion {
     param([string]$JavaExe)
     if (-not $JavaExe -or -not (Test-Path -LiteralPath $JavaExe)) { return $null }
-    $out = & $JavaExe -version 2>&1
+    $out = & $JavaExe -Xms16m -Xmx64m -XX:+UseSerialGC -version 2>&1
     $text = ($out | ForEach-Object { "$_" }) -join "`n"
     if ($text -match 'version\s+"(\d+)(?:\.(\d+))?') {
         return [pscustomobject]@{ Major = [int]$matches[1]; Minor = [int]$matches[2]; Text = $text.Trim() }
@@ -193,7 +193,7 @@ function New-MySqlOptionFile {
     if ($Password -match "[`r`n]") { throw 'MySQL 密码不能包含换行符。' }
     $escaped = $Password.Replace('\', '\\').Replace('"', '\"')
     $lines = @('[client]', "user=$User", "password=`"$escaped`"", "host=$HostName", "port=$Port", 'default-character-set=utf8mb4')
-    [System.IO.File]::WriteAllLines($Path, $lines, [System.Text.Encoding]::ASCII)
+    [System.IO.File]::WriteAllLines($Path, $lines, (New-Object System.Text.UTF8Encoding($false)))
 }
 
 function Invoke-MySqlScalar {

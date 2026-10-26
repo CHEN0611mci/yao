@@ -32,6 +32,9 @@ if (-not $DbPassword -or $DbPassword -eq 'CHANGE_ME') {
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
 }
 
+try { & (Join-Path $PSScriptRoot 'apply-migrations.ps1') -DatabasePassword $DbPassword }
+catch { Write-Bad ('Schema upgrade failed: ' + $_.Exception.Message); exit 1 }
+
 $java = Resolve-Java -Root $Root -Config $Config
 if (-not $java) {
     Write-Bad '未找到 JDK 17 或更高版本。'
@@ -79,6 +82,8 @@ if (-not $jar -or $Rebuild) {
         if ($LASTEXITCODE -ne 0) { exit 1 }
     }
     $oldJavaHome = $env:JAVA_HOME
+    $oldMavenOptions = $env:MAVEN_OPTS
+    if (-not $env:MAVEN_OPTS) { $env:MAVEN_OPTS = '-Xms32m -Xmx384m -XX:+UseSerialGC' }
     $env:JAVA_HOME = $java.Home
     Push-Location (Join-Path $Root 'backend')
     try {
@@ -87,6 +92,7 @@ if (-not $jar -or $Rebuild) {
     } finally {
         Pop-Location
         if ($oldJavaHome) { $env:JAVA_HOME = $oldJavaHome } else { Remove-Item Env:JAVA_HOME -ErrorAction SilentlyContinue }
+        if ($oldMavenOptions) { $env:MAVEN_OPTS = $oldMavenOptions } else { Remove-Item Env:MAVEN_OPTS -ErrorAction SilentlyContinue }
     }
     if ($buildCode -ne 0) { Write-Bad "Maven 构建失败（exit=$buildCode）。"; exit 1 }
     $jar = $jarCandidates | Where-Object { Test-Path -LiteralPath $_ } | Sort-Object { (Get-Item -LiteralPath $_).LastWriteTimeUtc } -Descending | Select-Object -First 1
@@ -150,7 +156,7 @@ $env:DRUID_PASSWORD = Get-ConfigValue $Config 'DRUID_PASSWORD' '123456'
 
 $javaArgs = @(
     '-Dfile.encoding=UTF-8', '-Duser.timezone=Asia/Shanghai',
-    '-Xms256m', '-Xmx1024m', '-jar', "`"$jar`"", "--server.port=$Port"
+    '-Xms128m', '-Xmx512m', '-jar', "`"$jar`"", "--server.port=$Port"
 )
 if ($Foreground) {
     Write-Step "前台启动：http://127.0.0.1:$Port"

@@ -12,6 +12,9 @@ SET NAMES utf8mb4;
 USE `shop`;
 
 -- 按依赖逆序删除（本套表不建物理外键，顺序仅用于可读性与迁移安全）
+DROP TABLE IF EXISTS `pet_payment_request`;
+DROP TABLE IF EXISTS `pet_member_favorite`;
+DROP TABLE IF EXISTS `pet_member_preference`;
 DROP TABLE IF EXISTS `pet_message`;
 DROP TABLE IF EXISTS `pet_stock_log`;
 DROP TABLE IF EXISTS `pet_payment`;

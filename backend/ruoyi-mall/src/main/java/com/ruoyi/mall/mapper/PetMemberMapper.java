@@ -18,6 +18,8 @@ public interface PetMemberMapper
     PetMember selectByPhone(@Param("phone") String phone);
 
     PetMember selectById(@Param("id") Long id);
+    PetMember selectForUpdate(@Param("id") Long id);
+    int changePhone(@Param("id") Long id, @Param("phone") String phone);
 
     int insert(PetMember member);
 

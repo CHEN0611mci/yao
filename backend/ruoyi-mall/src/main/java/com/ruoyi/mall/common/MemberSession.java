@@ -16,6 +16,12 @@ public class MemberSession implements Serializable
     private String nickname;
     private String token;
     private Long loginAt;
+    private String sessionId;
+    private String client;
+    public String getSessionId() { return sessionId; }
+    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
+    public String getClient() { return client; }
+    public void setClient(String client) { this.client = client; }
 
     public MemberSession()
     {

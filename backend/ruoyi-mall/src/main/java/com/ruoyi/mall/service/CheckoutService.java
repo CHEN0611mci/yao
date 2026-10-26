@@ -83,6 +83,7 @@ public class CheckoutService
 
     @Autowired
     private MessageService messageService;
+    @Autowired private MemberWriteLock memberLock;
 
     public PreviewResponse preview(Long memberId, CheckoutPreviewRequest request)
     {
@@ -108,6 +109,7 @@ public class CheckoutService
     @Transactional(rollbackFor = Exception.class)
     public OrderSubmitResponse submit(Long memberId, SubmitOrderRequest request)
     {
+        memberLock.acquire(memberId);
         String clientToken = request.clientToken().trim();
         PetOrder existing = orderMapper.selectByClientToken(memberId, clientToken);
         if (existing != null)
@@ -308,7 +310,7 @@ public class CheckoutService
         if (petId != null)
         {
             PetMemberPet pet = petMapper.selectByIdAndMember(petId, memberId);
-            if (pet == null)
+            if (pet == null || !Integer.valueOf(0).equals(pet.getStatus()))
             {
                 if (strict)
                 {
@@ -353,6 +355,7 @@ public class CheckoutService
     {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("id", address.getId());
+        snapshot.put("addressId", address.getId());
         snapshot.put("receiver", address.getReceiver());
         snapshot.put("phone", address.getPhone());
         snapshot.put("province", address.getProvince());

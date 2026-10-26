@@ -134,7 +134,11 @@ onMounted(load)
         /></el-form-item>
       </div>
       <el-form-item
-        ><el-checkbox v-model="model.isDefault" :true-value="1" :false-value="0"
+        ><el-checkbox
+          v-model="model.isDefault"
+          :true-value="1"
+          :false-value="0"
+          :disabled="!!editId && rows.some((row) => row.id === editId && row.isDefault === 1)"
           >设为默认地址</el-checkbox
         ></el-form-item
       ></el-form

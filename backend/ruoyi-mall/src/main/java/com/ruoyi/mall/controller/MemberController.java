@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -88,4 +90,16 @@ public class MemberController
         memberService.changePassword(MemberContext.require(), request);
         return Result.success();
     }
+    @PutMapping("/phone")
+    public Result<Void> phone(@Valid @RequestBody com.ruoyi.mall.dto.PhoneChangeRequest request)
+    { memberService.changePhone(MemberContext.require(),request); return Result.success(); }
+    @GetMapping("/sessions")
+    public Result<java.util.List<MemberTokenService.SessionView>> sessions(HttpServletRequest request)
+    { return Result.success(memberTokenService.sessions(MemberContext.require(),MemberTokenService.resolveToken(request))); }
+    @DeleteMapping("/sessions/{id}")
+    public Result<Boolean> revoke(@PathVariable String id)
+    { return Result.success(memberTokenService.revoke(MemberContext.require(),id)); }
+    @PostMapping("/sessions/revoke-others")
+    public Result<Integer> revokeOthers(HttpServletRequest request)
+    { return Result.success(memberTokenService.revokeOthers(MemberContext.require(),MemberTokenService.resolveToken(request))); }
 }

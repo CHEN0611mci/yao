@@ -13,7 +13,7 @@ const all = files('src'),
   views = all.filter(
     (file) => file.includes(`${path.sep}views${path.sep}`) && file.endsWith('.vue'),
   )
-assert.equal(views.length, 18, '18 页面应全部实现')
+assert.equal(views.length, 19, '19 页面应全部实现')
 for (const file of all) {
   const content = fs.readFileSync(file, 'utf8')
   if (file.endsWith('.vue')) {

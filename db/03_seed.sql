@@ -21,6 +21,13 @@ SET @now = NOW();
 -- ============================================================================
 -- 0. 清理演示数据（按依赖逆序；保留若依系统内置数据，仅清理 mall 相关）
 -- ============================================================================
+-- Compatible with both the original schema and upgraded member feature tables.
+SET @cleanup = IF(EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pet_member_favorite'), 'DELETE FROM pet_member_favorite', 'SELECT 1');
+PREPARE cleanup_statement FROM @cleanup; EXECUTE cleanup_statement; DEALLOCATE PREPARE cleanup_statement;
+SET @cleanup = IF(EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pet_member_preference'), 'DELETE FROM pet_member_preference', 'SELECT 1');
+PREPARE cleanup_statement FROM @cleanup; EXECUTE cleanup_statement; DEALLOCATE PREPARE cleanup_statement;
+SET @cleanup = IF(EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='pet_payment_request'), 'DELETE FROM pet_payment_request', 'SELECT 1');
+PREPARE cleanup_statement FROM @cleanup; EXECUTE cleanup_statement; DEALLOCATE PREPARE cleanup_statement;
 DELETE FROM pet_message;
 DELETE FROM pet_stock_log;
 DELETE FROM pet_payment;

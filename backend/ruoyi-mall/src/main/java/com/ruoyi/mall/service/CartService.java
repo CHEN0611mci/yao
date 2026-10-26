@@ -47,6 +47,7 @@ public class CartService
     private MallConfigService configService;
 
     @Autowired private CatalogPolicy catalogPolicy;
+    @Autowired private MemberWriteLock memberLock;
 
     public List<PetCartItem> list(Long memberId)
     {
@@ -70,6 +71,7 @@ public class CartService
     @Transactional(rollbackFor = Exception.class)
     public PetCartItem add(Long memberId, CartAddRequest request)
     {
+        memberLock.acquire(memberId);
         PetItemSku sku = skuMapper.selectById(request.skuId());
         if (sku == null || sku.getStatus() == null || sku.getStatus() != 1)
         {
@@ -123,6 +125,7 @@ public class CartService
     @Transactional(rollbackFor = Exception.class)
     public PetCartItem update(Long memberId, Long cartItemId, CartUpdateRequest request)
     {
+        memberLock.acquire(memberId);
         PetCartItem row = requireOwned(memberId, cartItemId);
         if (request.quantity() != null)
         {
@@ -158,6 +161,7 @@ public class CartService
     @Transactional(rollbackFor = Exception.class)
     public void remove(Long memberId, Long cartItemId)
     {
+        memberLock.acquire(memberId);
         requireOwned(memberId, cartItemId);
         cartMapper.delete(cartItemId, memberId);
     }
@@ -183,7 +187,7 @@ public class CartService
         Map<Long, String> petNames = new HashMap<>();
         for (PetMemberPet pet : petMapper.selectByMemberId(memberId, true))
         {
-            petNames.put(pet.getId(), pet.getName());
+            if (Integer.valueOf(0).equals(pet.getStatus())) petNames.put(pet.getId(), pet.getName());
         }
         List<PetCartItem> result = new ArrayList<>();
         for (PetCartItem row : rows)
@@ -212,6 +216,8 @@ public class CartService
             {
                 reason = "库存不足";
             }
+            if (reason == null && row.getPetId() != null && !petNames.containsKey(row.getPetId()))
+                reason = "关联宠物已归档，请重新选择或取消关联";
             row.setValid(reason == null);
             row.setInvalidReason(reason);
             if (sku != null && sku.getPrice() != null)
@@ -244,7 +250,7 @@ public class CartService
             return;
         }
         PetMemberPet pet = petMapper.selectByIdAndMember(petId, memberId);
-        if (pet == null)
+        if (pet == null || !Integer.valueOf(0).equals(pet.getStatus()))
         {
             throw new ForbiddenException("宠物档案不存在或无权访问");
         }

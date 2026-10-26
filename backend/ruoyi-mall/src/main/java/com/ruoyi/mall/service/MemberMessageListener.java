@@ -20,6 +20,7 @@ public class MemberMessageListener
 {
     @Autowired
     private PetMessageMapper messageMapper;
+    @Autowired private MemberFeatureService memberFeatures;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -30,6 +31,7 @@ public class MemberMessageListener
             return;
         }
         PetMessage message = new PetMessage();
+        if (!memberFeatures.accepts(event.memberId(),event.type())) return;
         message.setMemberId(event.memberId());
         message.setType(event.type());
         message.setTitle(event.title());

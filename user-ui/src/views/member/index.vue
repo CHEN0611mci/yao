@@ -12,6 +12,9 @@ import MemberNav from '../../components/MemberNav.vue'
 import AsyncState from '../../components/AsyncState.vue'
 import ImageWithFallback from '../../components/ImageWithFallback.vue'
 import PasswordForm from '../../components/PasswordForm.vue'
+import PhoneForm from '../../components/PhoneForm.vue'
+import SessionPanel from '../../components/SessionPanel.vue'
+import NotificationSettings from '../../components/NotificationSettings.vue'
 const member = useMember(),
   route = useRoute(),
   router = useRouter(),
@@ -96,7 +99,7 @@ onMounted(load)
                   ><el-input v-model="model.nickname" maxlength="30" /></el-form-item
                 ><el-form-item label="手机号"
                   ><el-input
-                    :model-value="member.profile?.phone || '未绑定'"
+                    :model-value="member.profile?.phone || '未填写'"
                     disabled /></el-form-item
                 ><el-button type="primary" :loading="busy" @click="save"
                   >保存资料</el-button
@@ -110,6 +113,8 @@ onMounted(load)
                 </div>
               </div>
               <PasswordForm />
+              <PhoneForm />
+              <SessionPanel />
               <div class="security-row">
                 <div>
                   <h3>退出登录</h3>
@@ -117,10 +122,10 @@ onMounted(load)
                 </div>
                 <el-button :loading="busy" @click="logout">退出登录</el-button>
               </div></el-tab-pane
-            ></el-tabs
-          >
-        </section></AsyncState
-      >
+            ><el-tab-pane label="通知偏好" name="notifications" lazy
+              ><NotificationSettings /></el-tab-pane
+          ></el-tabs></section
+      ></AsyncState>
     </div>
   </div>
 </template>

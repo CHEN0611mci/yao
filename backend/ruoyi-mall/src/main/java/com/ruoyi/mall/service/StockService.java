@@ -40,11 +40,13 @@ public class StockService
         {
             return;
         }
+        PetItemSku locked = skuMapper.selectForUpdate(skuId);
+        if (locked == null) throw new BizException(ErrorCode.PET_3003, "SKU不存在");
         if (stockLogMapper.countBySkuOrderType(skuId, orderNo, TYPE_ORDER_DEDUCT) > 0)
         {
             return;
         }
-        Integer before = skuMapper.selectStock(skuId);
+        Integer before = locked.getStock();
         if (before == null)
         {
             throw new BizException(ErrorCode.PET_3003, "SKU不存在");
@@ -64,11 +66,13 @@ public class StockService
         {
             return;
         }
+        PetItemSku locked = skuMapper.selectForUpdate(skuId);
+        if (locked == null) throw new BizException(ErrorCode.PET_3003, "SKU不存在");
         if (stockLogMapper.countBySkuOrderType(skuId, orderNo, TYPE_ORDER_ROLLBACK) > 0)
         {
             return;
         }
-        Integer before = skuMapper.selectStock(skuId);
+        Integer before = locked.getStock();
         if (before == null)
         {
             throw new BizException(ErrorCode.PET_3003, "SKU不存在");
@@ -84,7 +88,7 @@ public class StockService
         {
             throw new BizException(ErrorCode.PET_1001, "库存不能为负");
         }
-        PetItemSku sku = skuMapper.selectById(skuId);
+        PetItemSku sku = skuMapper.selectForUpdate(skuId);
         if (sku == null)
         {
             throw new BizException(ErrorCode.PET_3003, "SKU不存在");
@@ -125,7 +129,10 @@ public class StockService
     {
         PetStockLog log = new PetStockLog();
         log.setSkuId(skuId);
-        log.setOrderNo(orderNo);
+        // Manual adjustments also need a unique reference: order_no is NOT NULL,
+        // and (sku_id, order_no, type) is unique for order deduction/rollback.
+        log.setOrderNo(orderNo == null || orderNo.isBlank()
+                ? "ADJ" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 29) : orderNo);
         log.setType(type);
         log.setChangeQty(changeQty);
         log.setBeforeQty(before);

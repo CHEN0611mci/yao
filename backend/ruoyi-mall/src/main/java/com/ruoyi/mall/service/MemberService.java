@@ -39,6 +39,7 @@ public class MemberService
 
     @Autowired
     private MallRateLimiter rateLimiter;
+    @Autowired private MemberWriteLock memberLock;
 
     @Transactional(rollbackFor = Exception.class)
     public LoginResponse register(MemberRegisterRequest request)
@@ -67,12 +68,14 @@ public class MemberService
         return new LoginResponse(token, sanitize(member));
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public LoginResponse login(MemberLoginRequest request)
     {
         String username = request.username().trim();
         rateLimiter.check("member-login", username, 10, 60);
 
         PetMember member = memberMapper.selectByUsername(username);
+        if (member != null) member = memberLock.acquire(member.getId());
         if (member == null || !SecurityUtils.matchesPassword(request.password(), member.getPassword()))
         {
             throw new BizException(ErrorCode.PET_2002);
@@ -148,7 +151,7 @@ public class MemberService
     public void changePassword(Long memberId, PasswordChangeRequest request)
     {
         rateLimiter.check("member-password", String.valueOf(memberId), 5, 600);
-        PetMember member = requireMember(memberId);
+        PetMember member = memberLock.acquire(memberId);
         if (!SecurityUtils.matchesPassword(request.oldPassword(), member.getPassword()))
             throw new BizException(ErrorCode.PET_2002, "原密码不正确");
         if (request.oldPassword().equals(request.newPassword()))
@@ -156,6 +159,20 @@ public class MemberService
         if (memberMapper.changePassword(memberId, member.getPassword(),
                 SecurityUtils.encryptPassword(request.newPassword())) != 1)
             throw new BizException(ErrorCode.PET_1001, "密码已变化，请重新登录");
+        memberTokenService.invalidateByMemberId(memberId);
+    }
+
+    @Transactional(rollbackFor=Exception.class)
+    public void changePhone(Long memberId, com.ruoyi.mall.dto.PhoneChangeRequest request)
+    {
+        rateLimiter.check("member-phone",String.valueOf(memberId),5,600);
+        PetMember member = memberLock.acquire(memberId);
+        if(!SecurityUtils.matchesPassword(request.password(),member.getPassword()))
+            throw new BizException(ErrorCode.PET_2002,"密码不正确");
+        if(request.phone().equals(member.getPhone())) throw new BizException(ErrorCode.PET_1001,"联系手机号未变化");
+        PetMember existing = memberMapper.selectByPhone(request.phone());
+        if(existing != null && !memberId.equals(existing.getId())) throw new BizException(ErrorCode.PET_1002,"手机号已被使用");
+        memberMapper.changePhone(memberId,request.phone());
         memberTokenService.invalidateByMemberId(memberId);
     }
 

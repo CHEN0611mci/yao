@@ -13,11 +13,19 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <select id="selectByOrderNo" resultType="com.ruoyi.mall.domain.PetPayment">
         SELECT id, payment_no, order_no, amount, channel, status, idempotency_key, callback_time, create_time
-        FROM pet_payment WHERE order_no = #{orderNo} ORDER BY id DESC LIMIT 1
+        FROM pet_payment WHERE order_no = #{orderNo} ORDER BY (status = 'SUCCESS') DESC, id DESC LIMIT 1
     </select>
+
+    <insert id="bindRequest">
+        INSERT INTO pet_payment_request(idempotency_key,payment_id) VALUES(#{idempotencyKey},#{paymentId})
+    </insert>
 
     <select id="selectByIdempotencyKey" resultType="com.ruoyi.mall.domain.PetPayment">
         SELECT id, payment_no, order_no, amount, channel, status, idempotency_key, callback_time, create_time
-        FROM pet_payment WHERE idempotency_key = #{idempotencyKey} LIMIT 1
+        FROM pet_payment WHERE idempotency_key = #{idempotencyKey}
+        UNION ALL
+        SELECT p.id,p.payment_no,p.order_no,p.amount,p.channel,p.status,p.idempotency_key,p.callback_time,p.create_time
+        FROM pet_payment_request r JOIN pet_payment p ON p.id=r.payment_id
+        WHERE r.idempotency_key=#{idempotencyKey} LIMIT 1
     </select>
 </mapper>

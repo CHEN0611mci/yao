@@ -25,7 +25,7 @@ public interface PetAddressMapper
 
     int delete(@Param("id") Long id, @Param("memberId") Long memberId);
 
-    int clearDefault(@Param("memberId") Long memberId);
+    int clearDefault(@Param("memberId") Long memberId, @Param("addressId") Long addressId);
 
     int setDefault(@Param("id") Long id, @Param("memberId") Long memberId);
 

@@ -41,21 +41,19 @@ public class PaymentService
     @Transactional(rollbackFor = Exception.class)
     public PaymentResponse mockPay(Long memberId, MockPayRequest request, String idempotencyKey)
     {
-        PetOrder order = orderMapper.selectByOrderNoAndMember(request.orderNo(), memberId);
-        if (order == null)
+        PetOrder order = orderMapper.selectForUpdate(request.orderNo());
+        if (order == null || !memberId.equals(order.getMemberId()))
         {
             throw new BizException(ErrorCode.PET_4003);
         }
-        String key = StringUtils.isEmpty(idempotencyKey)
+        String key = StringUtils.isBlank(idempotencyKey)
                 ? "MOCK-" + order.getOrderNo() + "-" + request.result()
                 : idempotencyKey.trim();
+        validateKey(key);
         PetPayment existing = paymentMapper.selectByIdempotencyKey(key);
         if (existing != null)
         {
-            if (!existing.getOrderNo().equals(order.getOrderNo()))
-            {
-                throw new BizException(ErrorCode.PET_1002, "幂等键已被其他订单使用");
-            }
+            verifyReplay(existing, order.getOrderNo(), order.getPayAmount(), request.channel(), request.result());
             return response(existing, true);
         }
         return settle(order, order.getPayAmount(), request.channel(),
@@ -65,25 +63,22 @@ public class PaymentService
     @Transactional(rollbackFor = Exception.class)
     public PaymentResponse callback(PayCallbackRequest request, String idempotencyKey)
     {
-        if (StringUtils.isEmpty(idempotencyKey))
+        if (StringUtils.isBlank(idempotencyKey))
         {
             throw new BizException(ErrorCode.PET_1001, "Idempotency-Key不能为空");
         }
         String key = idempotencyKey.trim();
-        PetPayment existing = paymentMapper.selectByIdempotencyKey(key);
-        if (existing != null)
-        {
-            if (!existing.getOrderNo().equals(request.orderNo())
-                    || existing.getAmount().compareTo(request.amount()) != 0)
-            {
-                throw new BizException(ErrorCode.PET_1002, "幂等键对应的订单或金额不一致");
-            }
-            return response(existing, true);
-        }
-        PetOrder order = orderMapper.selectByOrderNo(request.orderNo());
+        validateKey(key);
+        PetOrder order = orderMapper.selectForUpdate(request.orderNo());
         if (order == null)
         {
             throw new BizException(ErrorCode.PET_4003);
+        }
+        PetPayment existing = paymentMapper.selectByIdempotencyKey(key);
+        if (existing != null)
+        {
+            verifyReplay(existing, request.orderNo(), request.amount(), request.channel(), request.result());
+            return response(existing, true);
         }
         if (request.amount().compareTo(order.getPayAmount()) != 0)
         {
@@ -114,41 +109,29 @@ public class PaymentService
     {
         boolean success = "SUCCESS".equals(result);
         Integer orderStatus = order.getStatus();
-        boolean duplicated = false;
+        if (success && orderStatus != null && (orderStatus == 2 || orderStatus == 3 || orderStatus == 4))
+        {
+            PetPayment paid = paymentMapper.selectByOrderNo(order.getOrderNo());
+            if (paid != null && "SUCCESS".equals(paid.getStatus()))
+            {
+                verifyReplay(paid, order.getOrderNo(), amount, channel, result);
+                paymentMapper.bindRequest(idempotencyKey, paid.getId());
+                return response(paid, true);
+            }
+            throw new BizException(ErrorCode.PET_3002, "订单已支付但支付记录缺失，请联系管理员核对");
+        }
+        if (orderStatus == null || orderStatus != 0 || order.getExpireAt() == null
+                || !order.getExpireAt().after(new java.util.Date()))
+        {
+            throw new BizException(ErrorCode.PET_3002, "订单当前状态不可支付");
+        }
         if (success)
         {
-            if (order.getStatus() != null && order.getStatus() == 0)
-            {
-                int rows = orderMapper.updateToPaid(order.getOrderNo());
-                if (rows > 0)
-                {
-                    orderStatus = 2;
-                }
-                else
-                {
-                    PetOrder latest = orderMapper.selectByOrderNo(order.getOrderNo());
-                    if (latest != null && latest.getStatus() != null
-                            && (latest.getStatus() == 2 || latest.getStatus() == 3
-                                    || latest.getStatus() == 4))
-                    {
-                        orderStatus = latest.getStatus();
-                        duplicated = true;
-                    }
-                    else
-                    {
-                        throw new BizException(ErrorCode.PET_3002, "订单当前状态不可支付");
-                    }
-                }
-            }
-            else if (order.getStatus() != null
-                    && (order.getStatus() == 2 || order.getStatus() == 3 || order.getStatus() == 4))
-            {
-                duplicated = true;
-            }
-            else
+            if (orderMapper.updateToPaid(order.getOrderNo()) != 1)
             {
                 throw new BizException(ErrorCode.PET_3002, "订单当前状态不可支付");
             }
+            orderStatus = 2;
         }
 
         PetPayment payment = new PetPayment();
@@ -159,13 +142,28 @@ public class PaymentService
         payment.setStatus(success ? "SUCCESS" : ("TIMEOUT".equals(result) ? "TIMEOUT" : "FAILED"));
         payment.setIdempotencyKey(idempotencyKey);
         paymentMapper.insert(payment);
-        if (success && !duplicated)
+        paymentMapper.bindRequest(idempotencyKey, payment.getId());
+        if (success)
         {
             messageService.notify(order.getMemberId(), "ORDER", "支付成功",
                     "订单" + order.getOrderNo() + "已支付成功，我们会尽快为您发货。",
                     "/pages/order/detail?orderNo=" + order.getOrderNo());
         }
-        return new PaymentResponse(payment.getPaymentNo(), payment.getStatus(), orderStatus, duplicated);
+        return new PaymentResponse(payment.getPaymentNo(), payment.getStatus(), orderStatus, false);
+    }
+
+    private void validateKey(String key)
+    {
+        if (key.length() > 64 || key.isBlank())
+            throw new BizException(ErrorCode.PET_1001, "幂等键长度须为1至64个字符");
+    }
+
+    private void verifyReplay(PetPayment existing, String orderNo, BigDecimal amount, String channel, String result)
+    {
+        String status = "FAIL".equals(result) ? "FAILED" : result;
+        if (!existing.getOrderNo().equals(orderNo) || existing.getAmount().compareTo(amount) != 0
+                || !existing.getChannel().equals(channel) || !existing.getStatus().equals(status))
+            throw new BizException(ErrorCode.PET_1002, "幂等键对应的订单、金额、渠道或结果不一致");
     }
 
     private PaymentResponse response(PetPayment payment, boolean duplicated)

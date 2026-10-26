@@ -28,6 +28,7 @@ public class PetProfileService
 
     @Autowired
     private MallConfigService configService;
+    @Autowired private MemberWriteLock memberLock;
 
     public List<PetMemberPet> list(Long memberId, boolean includeArchived)
     {
@@ -51,6 +52,7 @@ public class PetProfileService
     @Transactional(rollbackFor = Exception.class)
     public PetMemberPet create(Long memberId, PetProfileRequest request)
     {
+        memberLock.acquire(memberId);
         if (petMapper.countByMember(memberId) >= configService.petMax())
         {
             throw new BizException(ErrorCode.PET_1004,
@@ -67,6 +69,7 @@ public class PetProfileService
     @Transactional(rollbackFor = Exception.class)
     public PetMemberPet update(Long memberId, Long petId, PetProfileRequest request)
     {
+        memberLock.acquire(memberId);
         PetMemberPet pet = getOwned(memberId, petId);
         if (pet.getStatus() != 0 && Integer.valueOf(0).equals(request.status())
                 && petMapper.countByMember(memberId) >= configService.petMax())
@@ -85,6 +88,7 @@ public class PetProfileService
     @Transactional(rollbackFor = Exception.class)
     public void archive(Long memberId, Long petId)
     {
+        memberLock.acquire(memberId);
         getOwned(memberId, petId);
         petMapper.archive(petId, memberId);
     }

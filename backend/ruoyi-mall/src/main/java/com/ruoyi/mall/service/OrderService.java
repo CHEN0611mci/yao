@@ -69,6 +69,7 @@ public class OrderService
     private MessageService messageService;
 
     @Autowired private AddressService addressService;
+    @Autowired private MemberWriteLock memberLock;
 
     public PageResult<PetOrder> memberList(Long memberId, Integer status, int pageNum, int pageSize)
     {
@@ -87,6 +88,7 @@ public class OrderService
     @Transactional(rollbackFor = Exception.class)
     public void changeAddress(Long memberId, String orderNo, Long addressId)
     {
+        memberLock.acquire(memberId);
         PetOrder order = orderMapper.selectByOrderNoAndMember(orderNo, memberId);
         if (order == null) throw new BizException(ErrorCode.PET_4003);
         var address = addressService.getOwned(memberId, addressId);

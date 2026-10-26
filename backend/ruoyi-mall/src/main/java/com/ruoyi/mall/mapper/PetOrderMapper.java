@@ -17,6 +17,8 @@ public interface PetOrderMapper
 {
     PetOrder selectByOrderNo(@Param("orderNo") String orderNo);
 
+    PetOrder selectForUpdate(@Param("orderNo") String orderNo);
+
     PetOrder selectByOrderNoAndMember(@Param("orderNo") String orderNo, @Param("memberId") Long memberId);
 
     PetOrder selectByClientToken(@Param("memberId") Long memberId, @Param("clientToken") String clientToken);

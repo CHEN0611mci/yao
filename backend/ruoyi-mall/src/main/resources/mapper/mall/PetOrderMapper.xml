@@ -14,6 +14,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SELECT <include refid="columns"/> FROM pet_order WHERE order_no = #{orderNo} LIMIT 1
     </select>
 
+    <select id="selectForUpdate" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order WHERE order_no = #{orderNo} LIMIT 1 FOR UPDATE
+    </select>
+
     <select id="selectByOrderNoAndMember" resultType="com.ruoyi.mall.domain.PetOrder">
         SELECT <include refid="columns"/> FROM pet_order
         WHERE order_no = #{orderNo} AND member_id = #{memberId} LIMIT 1

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as api from '../../api/item.js'
+import * as favorites from '../../api/favorites.js'
 import { useCart } from '../../stores/cart.js'
 import { useMember } from '../../stores/member.js'
 import { usePet } from '../../stores/pet.js'
@@ -21,6 +22,7 @@ const route = useRoute(),
   cart = useCart(),
   member = useMember(),
   pet = usePet()
+const favorite = ref(false)
 const item = ref(null),
   skuId = ref(null),
   quantity = ref(1),
@@ -41,7 +43,10 @@ const load = () =>
     item.value = await api.detail(route.params.id)
     skuId.value = item.value.skus?.find((row) => row.stock > 0 && row.status !== 0)?.id
     activeImage.value = item.value.mainImage
-    if (member.loggedIn) await pet.fetch()
+    if (member.loggedIn) {
+      await pet.fetch()
+      favorite.value = await favorites.contains(item.value.id)
+    }
   })
 async function add(buy = false) {
   if (!sku.value) return
@@ -58,13 +63,35 @@ async function add(buy = false) {
     return
   }
   await act(async () => {
-    await cart.add(item.value, sku.value, quantity.value, pet.selected)
     if (buy) {
-      const row = cart.rows.find((row) => row.skuId === sku.value.id)
-      if (row) await cart.change(row.id, { checked: 1 })
+      await cart.fetch()
+      let row = cart.rows.find((row) => row.skuId === sku.value.id)
+      if (!row) {
+        await cart.add(item.value, sku.value, quantity.value, pet.selected)
+        row = cart.rows.find((row) => row.skuId === sku.value.id)
+      }
+      if (!row) throw new Error('未找到待结算商品，请重试')
+      await cart.change(row.id, {
+        quantity: quantity.value,
+        checked: 1,
+        ...(pet.selected ? { petId: pet.selected } : { clearPet: true }),
+      })
       await router.push({ path: '/checkout', query: { from: 'buynow', skuId: sku.value.id } })
-    } else ElMessage.success(member.loggedIn ? '已加入购物车' : '已加入游客购物车，登录后自动合并')
+    } else {
+      await cart.add(item.value, sku.value, quantity.value, pet.selected)
+      ElMessage.success(member.loggedIn ? '已加入购物车' : '已加入游客购物车，登录后自动合并')
+    }
   })
+}
+async function toggleFavorite() {
+  if (!member.loggedIn) return router.push({ path: '/login', query: { redirect: route.fullPath } })
+  await act(
+    async () => {
+      await (favorite.value ? favorites.remove(item.value.id) : favorites.add(item.value.id))
+      favorite.value = !favorite.value
+    },
+    favorite.value ? '已取消收藏' : '已收藏，可在个人中心查看',
+  )
 }
 onMounted(load)
 </script>
@@ -150,6 +177,9 @@ onMounted(load)
               >立即购买</el-button
             >
           </div>
+          <el-button :disabled="busy" @click="toggleFavorite">{{
+            favorite ? '♥ 已收藏' : '♡ 收藏好物'
+          }}</el-button>
           <p class="detail-assurance">按宠适配建议仅供选购参考，健康问题请咨询兽医。</p>
         </div>
       </section>

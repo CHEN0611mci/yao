@@ -20,6 +20,7 @@ import {
   Refresh,
   Document,
   Collection,
+  Star,
   ArrowDown,
 } from '@element-plus/icons-vue'
 const props = defineProps({ name: String, size: { type: [String, Number], default: 20 } })
@@ -43,6 +44,7 @@ const icons = {
   Refresh,
   Document,
   Collection,
+  Star,
   ArrowDown,
 }
 const icon = computed(() => icons[props.name] || Box)

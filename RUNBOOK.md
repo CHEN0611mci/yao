@@ -6,9 +6,9 @@
 
 管理端生产构建用 `start-admin-runtime.bat` 在 http://127.0.0.1:80/ 启动，先启动商城后端。管理端重新构建先复制 `.env.example` 为 `.env.production`，设置 `VITE_APP_ENV=production`、`VITE_APP_BASE_API=/prod-api`。本机配置均不提交。
 
-换机先填写 `config/backend.env` 并安装运行环境。日常启动不要执行 `03_seed.sql`；本轮无表结构变更或数据重置。查看 `logs/console.log`、`logs/user-ui.err.log`，或 http://127.0.0.1:8080/api/health 排错。本地 MySQL 8 认证参数已通过配置传递，无须手写 JDBC 环境变量。
+换机先填写 `config/backend.env` 并安装运行环境。日常启动不要执行 `03_seed.sql`；v2.2.0 启动自动执行 `db/05_member_features.sql`，新增 3 张表，升级后共 48 张表（17 张业务表）。已有数据保留，不执行种子重置。查看 `logs/console.log`、`logs/user-ui.err.log`，或 http://127.0.0.1:8080/api/health 排错。本地 MySQL 8 认证参数已通过配置传递，无须手写 JDBC 环境变量。
 
-详情见 `docs/修复记录-v1.1.0.md` 和 `user-ui/README.md`。以下保留原交接基线，历史验收数字不代表本轮结果。
+详情见 `docs/功能完善-v1.2.0.md` 和 `user-ui/README.md`。运行库只读校验：在 user-ui 下执行 `node scripts/verify-runtime-db.mjs`。`db/verify.sql` 包含种子数量检查，运行过测试或有真实业务数据时不要为了让种子数量通过而重置数据库。以下保留原交接基线，历史验收数字不代表本轮结果。
 
 > 适用：Windows 10/11 + PowerShell 5.1+　｜　版本：v2.0　｜　更新：2026-10-19
 >
@@ -338,3 +338,7 @@ curl.exe -X POST http://127.0.0.1:8080/api/member/login `
 - [ ] 已修改所有演示密码/密钥（正式环境）。
 
 对应源码位置：`backend\ruoyi-admin\src\main\resources\application.yml`、`application-druid.yml`。所有值均可用 `${ENV:默认值}` 覆盖，不需要改源码。
+
+## 内存不足排错（v2.2.0）
+
+Windows 报错 1455 / insufficient memory / 页面文件太小时，JDK 本身可能仍已安装。版本探测现使用 16–64MB 堆；后端默认 128–512MB 堆，Maven 未配置 MAVEN_OPTS 时使用 32–384MB。若系统提交内存仍耗尽，关闭不使用的程序或调整 Windows 页面文件，再运行 start-mall.bat。脚本不会修改系统页面文件或终止其他应用。

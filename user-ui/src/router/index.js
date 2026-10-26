@@ -13,6 +13,24 @@ const router = createRouter({
     return saved || (to.path === from.path ? undefined : { top: 0 })
   },
 })
+// An open tab can reference removed chunk hashes after a local rebuild.
+// Retry the requested route once with a fresh document, retaining stored login/cart data.
+router.onError((error, to) => {
+  if (
+    !/dynamically imported module|Loading chunk|Importing a module script failed/i.test(
+      error.message,
+    )
+  )
+    return
+  const key = 'mall_chunk_reload'
+  const last = Number(sessionStorage.getItem(key) || 0)
+  if (Date.now() - last < 60000) {
+    ElMessage.error('页面资源更新失败，请稍后刷新重试')
+    return
+  }
+  sessionStorage.setItem(key, String(Date.now()))
+  window.location.assign(safeRedirect(to.fullPath))
+})
 router.beforeEach(async (to) => {
   document.title = `${to.meta.title || '商城'} · 萌宠优选`
   const member = useMember()

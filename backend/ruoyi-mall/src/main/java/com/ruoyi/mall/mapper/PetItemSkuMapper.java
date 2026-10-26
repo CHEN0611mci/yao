@@ -18,6 +18,8 @@ public interface PetItemSkuMapper
 
     PetItemSku selectById(@Param("id") Long id);
 
+    PetItemSku selectForUpdate(@Param("id") Long id);
+
     Integer selectStock(@Param("id") Long id);
 
     int deductStock(@Param("id") Long id, @Param("quantity") Integer quantity);

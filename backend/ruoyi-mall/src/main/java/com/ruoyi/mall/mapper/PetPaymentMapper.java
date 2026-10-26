@@ -14,6 +14,8 @@ public interface PetPaymentMapper
 {
     int insert(PetPayment payment);
 
+    int bindRequest(@Param("idempotencyKey") String idempotencyKey, @Param("paymentId") Long paymentId);
+
     PetPayment selectByOrderNo(@Param("orderNo") String orderNo);
 
     PetPayment selectByIdempotencyKey(@Param("idempotencyKey") String idempotencyKey);

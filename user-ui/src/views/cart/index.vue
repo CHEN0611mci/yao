@@ -126,7 +126,7 @@ onMounted(load)
           <small v-else-if="row.sku?.stock < 4" class="notice-text"
             >仅剩 {{ row.sku?.stock }} 件</small
           ><PetSelector
-            v-if="pet.rows.length"
+            v-if="pet.rows.length || row.petId"
             :model-value="row.petId"
             :pets="pet.rows"
             :clearable="true"

@@ -45,7 +45,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 
     <update id="clearDefault">
         UPDATE pet_address SET is_default = 0, update_time = NOW()
-        WHERE member_id = #{memberId} AND is_default = 1
+        WHERE id = #{addressId} AND member_id = #{memberId} AND is_default = 1
     </update>
 
     <update id="setDefault">
@@ -57,6 +57,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SELECT COUNT(*) FROM pet_order
         WHERE member_id = #{memberId}
           AND status IN (0, 1, 2, 3, 7)
-          AND receiver_snapshot LIKE CONCAT('%"addressId":', #{addressId}, '%')
+          AND CASE WHEN JSON_VALID(receiver_snapshot) THEN
+              COALESCE(JSON_UNQUOTE(JSON_EXTRACT(receiver_snapshot, '$.addressId')),
+                       JSON_UNQUOTE(JSON_EXTRACT(receiver_snapshot, '$.id'))) = CAST(#{addressId} AS CHAR)
+              ELSE FALSE END
     </select>
 </mapper>

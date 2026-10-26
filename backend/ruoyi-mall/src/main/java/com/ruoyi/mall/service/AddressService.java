@@ -25,6 +25,7 @@ public class AddressService
 
     @Autowired
     private MallConfigService configService;
+    @Autowired private MemberWriteLock memberLock;
 
     public List<PetAddress> list(Long memberId)
     {
@@ -44,6 +45,7 @@ public class AddressService
     @Transactional(rollbackFor = Exception.class)
     public PetAddress create(Long memberId, AddressRequest request)
     {
+        memberLock.acquire(memberId);
         int count = addressMapper.countByMember(memberId);
         if (count >= configService.addressMax())
         {
@@ -57,7 +59,7 @@ public class AddressService
         }
         if (isDefault == 1)
         {
-            addressMapper.clearDefault(memberId);
+            clearDefaults(memberId);
         }
         PetAddress address = new PetAddress();
         address.setMemberId(memberId);
@@ -70,14 +72,17 @@ public class AddressService
     @Transactional(rollbackFor = Exception.class)
     public PetAddress update(Long memberId, Long addressId, AddressRequest request)
     {
+        memberLock.acquire(memberId);
         PetAddress address = getOwned(memberId, addressId);
         apply(address, request);
+        if (Integer.valueOf(1).equals(address.getIsDefault()) && Integer.valueOf(0).equals(request.isDefault()))
+            throw new BizException(ErrorCode.PET_1001, "请先将其他地址设为默认地址");
         if (request.isDefault() != null)
         {
             address.setIsDefault(request.isDefault() == 1 ? 1 : 0);
             if (address.getIsDefault() == 1)
             {
-                addressMapper.clearDefault(memberId);
+                clearDefaults(memberId);
             }
         }
         addressMapper.update(address);
@@ -87,6 +92,7 @@ public class AddressService
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long memberId, Long addressId)
     {
+        memberLock.acquire(memberId);
         PetAddress address = getOwned(memberId, addressId);
         if (addressMapper.countActiveOrderByAddress(memberId, addressId) > 0)
         {
@@ -106,10 +112,20 @@ public class AddressService
     @Transactional(rollbackFor = Exception.class)
     public PetAddress setDefault(Long memberId, Long addressId)
     {
+        memberLock.acquire(memberId);
         getOwned(memberId, addressId);
-        addressMapper.clearDefault(memberId);
+        clearDefaults(memberId);
         addressMapper.setDefault(addressId, memberId);
         return addressMapper.selectByIdAndMember(addressId, memberId);
+    }
+
+    private void clearDefaults(Long memberId)
+    {
+        // The member row is already locked by every caller. Update existing PKs
+        // only, avoiding range/gap locks on empty address ranges of other members.
+        for (PetAddress row : addressMapper.selectByMemberId(memberId))
+            if (Integer.valueOf(1).equals(row.getIsDefault()))
+                addressMapper.clearDefault(memberId, row.getId());
     }
 
     private void apply(PetAddress address, AddressRequest request)

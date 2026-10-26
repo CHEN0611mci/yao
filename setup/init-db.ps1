@@ -2,7 +2,7 @@
 <#
     萌宠优选 · 数据库初始化 / 校验
     ------------------------------------------------------------------
-    目标库：MySQL 8.0，库名 shop，45 张表（31 若依 + 14 业务）
+    目标库：MySQL 8.0，库名 shop，48 张表（31 若依 + 17 业务）
     常用：
       powershell -ExecutionPolicy Bypass -File .\setup\init-db.ps1
       powershell -ExecutionPolicy Bypass -File .\setup\init-db.ps1 -Action Status
@@ -10,7 +10,7 @@
       powershell -ExecutionPolicy Bypass -File .\setup\init-db.ps1 -Action Fresh -Force
     说明：
       - 默认 Auto：空库自动 01→02→03；已有 31 张若依表则 02→03；
-        已有 45 张表则只检查，不覆盖数据。
+        已有 45/47/48 张表则执行增量升级，不覆盖数据。
       - Fresh/Business/Seed 会覆盖数据；未加 -Force 时拒绝执行。
       - 覆盖前默认用 mysqldump 备份到 backup\，可用 -NoBackup 关闭。
 #>
@@ -75,8 +75,8 @@ try {
 
     function Show-State {
         param($State)
-        Write-Info "shop 表数量：$($State.Tables)（期望 45；若依基座 31 + 业务 14）"
-        Write-Info "pet_* 业务表：$($State.Pet)（期望 14）"
+        Write-Info "shop 表数量：$($State.Tables)（期望 48；若依基座 31 + 业务 17）"
+        Write-Info "pet_* 业务表：$($State.Pet)（期望 17）"
     }
 
 
@@ -159,9 +159,10 @@ try {
         Run-SqlFile '02_pet_mall.sql'
         Run-SqlFile '03_seed.sql'
     }
-    elseif ($state.Tables -eq 45 -and $state.Pet -eq 14) {
+    elseif (($state.Tables -eq 45 -and $state.Pet -eq 14) -or ($state.Tables -eq 47 -and $state.Pet -eq 16) -or ($state.Tables -eq 48 -and $state.Pet -eq 17)) {
         if ($Action -eq 'Auto') {
-            Write-Ok '数据库已初始化（45 张表，14 张业务表），跳过重建。'
+            Run-SqlFile '05_member_features.sql'
+            Write-Ok '数据库已升级至 48 张表（17 张业务表），现有数据已保留。'
             Write-Info '如需校验：-Action Verify；如需重置演示数据：-Action Seed -Force。'
             exit 0
         }
@@ -187,10 +188,11 @@ try {
         exit 2
     }
 
+    Run-SqlFile '05_member_features.sql'
     $final = Get-DbState
     Write-Step '初始化完成'
     Show-State $final
-    if ($final.Tables -eq 45 -and $final.Pet -eq 14) {
+    if ($final.Tables -eq 48 -and $final.Pet -eq 17) {
         Write-Ok '数据库结构正确，可以启动后端。'
         Write-Info '下一步：检查 config\backend.env 的 DB_PASSWORD，然后运行 start-backend.bat。'
         exit 0
