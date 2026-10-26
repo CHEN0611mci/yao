@@ -12,6 +12,7 @@
 超市管理系统/
 ├─ backend/      后端源码（RuoYi + ruoyi-mall）
 ├─ admin-ui/     管理前端（RuoYi-Vue3 + Vite，已实现 /mall 与 /merchant 页面；首次需 npm install）
+├─ user-ui/      用户前端（Vue3 + Vite，18 个页面；开发端口 81）
 ├─ config/       配置模板与本机 backend.env（含密码，Git 忽略）
 ├─ db/           SQL 脚本与执行证据
 ├─ docs/         需求 / 设计 / 数据库 / 规划 / AI 日志（已合并本地独有版本）
@@ -55,11 +56,14 @@ npm.cmd run build:prod        # 生产构建 → dist/
 - 商城接口（`/api/admin/**`、`/api/merchant/**`、`/api/upload/**`、`/api/home/**`）统一走 `src/utils/mallRequest.js`；若依接口仍走 `src/utils/request.js`。
 - 首次联调前建议执行 `db/04_fix_menu_route_name.sql`：管理端与商家端的 `items`/`orders` 路由同名，需给 3201/3202 补 `route_name`（设计文档 R-01；重跑 `03_seed.sql` 后需再次执行）。
 
-用户端（`user-ui`，客户前台）设计已定稿，工程尚未创建：
+用户端（`user-ui`，客户前台）已实现 18 个页面，直连现有后端，支持桌面与移动端：
 
 - 设计文档：`docs/02-设计文档/用户端前端详细设计_v1.0.md`（§3 真实接口契约 U01–U38、§5 十八个页面逐页设计、§6 请求层/组件/store、§7 十四条关键流程、§9 实施与验收）
-- 规划形态：新建 `user-ui/`（Vue 3 + Vite 6 + Element Plus + Pinia + Vue Router 4），开发端口 **81**，代理 `/api` 与 `/profile` → `http://localhost:8080`
-- 实施入口：按设计文档 §9.1 WBS 建卡、§9.3 十五步联调、§9.4 DoD 验收；演示账号 `member1/member123`、`member2/member123`
+- 工程：`user-ui/`（Vue 3 + Vite 6 + Element Plus 按需引入 + Pinia + Vue Router 4），开发端口 **81**，代理 `/api` 与 `/profile` → `http://127.0.0.1:8080`
+- 启动：双击 `start-user-ui.bat`，或进入 `user-ui` 执行 `npm.cmd ci`、`npm.cmd run dev`；演示账号 `member1/member123`、`member2/member123`
+- 功能：商品浏览筛选、会员账号、宠物档案、收货地址、消息、游客车合并、服务端结算、幂等下单、沙箱支付、订单与收货。
+- 校验：在 `user-ui` 执行 `npm.cmd test`、`npm.cmd run check`、`npm.cmd run build`；真实接口验收与浏览器记录见 `verify/user-ui/`；运行、部署及已知边界见 `user-ui/README.md`。
+- 交付包：[用户端 v1.0.0 ZIP](docs/05-交付包/user-ui-v1.0.0.zip)（包含源码、生产构建和验收资料）；[下载与使用说明](docs/05-交付包/README.md)。
 
 更多说明见 `RUNBOOK.md`；交接包原始说明已归档到 `docs/后端交接包_交付说明.md`。
 

@@ -1,0 +1,29 @@
+{
+  "name": "pet-mall-user-ui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test tests/*.test.js",
+    "check": "node scripts/check.mjs",
+    "format": "prettier --write src scripts tests vite.config.js"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "2.3.2",
+    "axios": "1.13.2",
+    "dompurify": "^3.3.0",
+    "element-plus": "2.13.1",
+    "pinia": "3.0.4",
+    "vue": "3.5.26",
+    "vue-router": "4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "5.2.4",
+    "prettier": "^3.6.2",
+    "unplugin-vue-components": "^0.27.5",
+    "vite": "6.4.1"
+  }
+}

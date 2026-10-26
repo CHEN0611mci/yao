@@ -16,6 +16,7 @@
 !/*.bat
 !/backend/
 !/admin-ui/
+!/user-ui/
 !/config/
 !/db/
 !/docs/
