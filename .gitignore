@@ -10,7 +10,18 @@
 !/.gitattributes
 !/.gitignore
 !/README.md
-!/shop/
+!/RUNBOOK.md
+!/00-START-HERE-AI-环境配置说明.md
+!/VERSION.txt
+!/*.bat
+!/backend/
+!/admin-ui/
+!/config/
+!/db/
+!/docs/
+!/scripts/
+!/setup/
+!/verify/
 
 # ---------- Java / Maven 构建产物 ----------
 **/target/
@@ -39,7 +50,7 @@ pnpm-debug.log*
 .env.*
 !.env.example
 !*.env.example
-**/config/backend.env
+/config/backend.env
 *.pem
 *.key
 *.p12
@@ -48,10 +59,11 @@ pnpm-debug.log*
 # ---------- 日志 / 运行数据 / 备份 ----------
 logs/
 *.log
-*.sql.gz
-*.pid
+data/
 uploads/
 backup/
+*.sql.gz
+*.pid
 *.tmp
 *.bak
 *.swp
