@@ -1,0 +1,155 @@
+================================================================================
+萌宠优选 · 宠物商城系统 — 管理端前端开发验收证据
+日期：2026-10-26
+范围：admin-ui 商城管理端 10 个页面 + 商城请求层/枚举/API/公共组件（按《管理端前端详细设计 v1.0》）
+环境：Windows / Node v24.21.0 / npm 11.19.0 / Vite 6.4.1 / Vue 3.5.26 / Element Plus 2.13.1
+================================================================================
+
+一、交付文件清单（新增 33 个文件，共 7641 行）
+--------------------------------------------------------------------------------
+[请求层与枚举]
+  admin-ui/src/utils/mallRequest.js                 126 行  商城 Result 专用 axios 实例
+  admin-ui/src/utils/mallDict.js                    230 行  枚举常量 + 格式化/快照/脱敏/日期工具
+
+[API 层 10 个]
+  admin-ui/src/api/mall/dashboard.js                  12 行  A1 / A22 / A23
+  admin-ui/src/api/mall/item.js                       21 行  A2–A7
+  admin-ui/src/api/mall/category.js                   23 行  A8–A12 + 匿名类目树（R-02）
+  admin-ui/src/api/mall/order.js                      10 行  A13–A15
+  admin-ui/src/api/mall/member.js                      7 行  A16–A17
+  admin-ui/src/api/mall/stock.js                      10 行  A18–A20
+  admin-ui/src/api/mall/auditLog.js                    4 行  A21
+  admin-ui/src/api/mall/merchant.js                   40 行  M1–M11
+  admin-ui/src/api/mall/upload.js                     11 行  A24
+
+[公共组件 10 个]
+  admin-ui/src/components/mall/MallStatusTag.vue      46 行
+  admin-ui/src/components/mall/MallMoney.vue          41 行
+  admin-ui/src/components/mall/MallImageUpload.vue   227 行  兼容 Result.data / AjaxResult
+  admin-ui/src/components/mall/CategoryTreeSelect.vue 68 行
+  admin-ui/src/components/mall/SkuEditor.vue         248 行  受控 SKU 子表
+  admin-ui/src/components/mall/ItemFormDrawer.vue    499 行  admin/merchant 共用表单抽屉
+  admin-ui/src/components/mall/AuditDrawer.vue       406 行  审核抽屉（含 readonly）
+  admin-ui/src/components/mall/OrderDetailDrawer.vue 424 行
+  admin-ui/src/components/mall/ShipDialog.vue        155 行
+  admin-ui/src/components/mall/StockAdjustDialog.vue 261 行
+
+[页面 10 个]（<script setup name> 与路由名一致，component 字符串与文件路径全等）
+  views/mall/dashboard/index.vue    284 行  name="Dashboard"       /mall/dashboard
+  views/mall/item/index.vue         571 行  name="Items"           /mall/items
+  views/mall/audit/index.vue        278 行  name="Audit"           /mall/audit
+  views/mall/category/index.vue     464 行  name="Categories"      /mall/categories
+  views/mall/order/index.vue        351 行  name="Orders"          /mall/orders
+  views/mall/member/index.vue       292 行  name="Members"         /mall/members
+  views/mall/stock/index.vue        590 行  name="Stock"           /mall/stock
+  views/mall/auditlog/index.vue     473 行  name="Audit-log"       /mall/audit-log
+  views/mall/merchant/item/index.vue 895 行 name="MerchantItems"   /merchant/items
+  views/mall/merchant/order/index.vue 300 行 name="MerchantOrders" /merchant/orders
+
+[工具与数据补丁]
+  admin-ui/scripts/mall-check.mjs                   243 行  商城前端静态自检脚本
+  db/04_fix_menu_route_name.sql                      31 行  R-01 同名路由补丁（幂等）
+
+二、静态自检（admin-ui/scripts/mall-check.mjs）
+--------------------------------------------------------------------------------
+命令：cd admin-ui && node scripts/mall-check.mjs
+结果：
+==== 商城管理端前端静态自检 ====
+检查页面：10 个；检查 SFC：20 个
+
+全部静态检查通过 ✔
+
+检查项：
+  1) 10 个页面文件存在，<script setup name> 与路由名一致；
+  2) 菜单 component 字符串与 src/views/** 文件全等（10/10）；
+  3) 20 个 SFC 经 @vue/compiler-sfc parse + compileScript + compileTemplate 全部 0 error；
+  4) 所有 @/components/mall、@/api/mall、@/utils/mallDict 的 import 可解析且导出名存在；
+  5) v-hasPermi/hasPermi 使用的权限码全部 ∈ 设计文档 §4.5 的 24 个 mall:* 权限码；
+  6) 无 console.*、无 addDateRange、无直接 import axios。
+
+三、生产构建（npm.cmd run build:prod）
+--------------------------------------------------------------------------------
+vite v6.4.1 building for production...
+✓ 2588 modules transformed.
+✓ built in 34.63s
+EXIT=0
+产物：admin-ui/dist —— 355 个文件 / 6.47 MB（index.html + static/js|css，含 gzip）
+商城相关 chunk 已生成（抽样）：dashboard-*.js、AuditDrawer-*.js、ItemFormDrawer-*.js、
+MallImageUpload-*.js、MallMoney-*.js、MallStatusTag-*.js、ShipDialog-*.js、
+StockAdjustDialog-*.js、CategoryTreeSelect-*.js、mallDict-*.js。
+（基线未改造前同命令为 2542 modules；新增商城模块约 46 个模块。）
+
+四、接口契约静态对照（前端 api 层 vs 后端源码）
+--------------------------------------------------------------------------------
+对照文件：backend/ruoyi-mall/src/main/java/com/ruoyi/mall/controller/**
+结果：路径 / HTTP 方法 / @PreAuthorize 权限码 / 查询参数名 全部一致
+  A1  GET  /api/admin/dashboard/summary            mall:dashboard:view
+  A2  GET  /api/admin/items                        hasAnyPermi(mall:item:list,mall:item:audit)
+  A3  GET  /api/admin/items/{id}                   同上
+  A4  POST /api/admin/items                        mall:item:add
+  A5  PUT  /api/admin/items/{id}                   mall:item:edit
+  A6  PUT  /api/admin/items/{id}/status            mall:item:status
+  A7  PUT  /api/admin/items/{id}/audit             mall:item:audit
+  A8–A12 /api/admin/categories[/{id}]              mall:category:list/add/edit/remove
+  A13 GET  /api/admin/orders                       mall:order:list（orderNo/memberId/merchantId/status/startTime/endTime/pageNum/pageSize）
+  A14 GET  /api/admin/orders/{orderNo}             mall:order:list
+  A15 PUT  /api/admin/orders/{orderNo}/ship        mall:order:ship
+  A16 GET  /api/admin/members                      mall:member:list（keyword/status/pageNum/pageSize）
+  A17 PUT  /api/admin/members/{id}/status          mall:member:status
+  A18 GET  /api/admin/stock                        mall:stock:list（keyword/itemId/merchantId/lowStock/threshold，无分页）
+  A19 GET  /api/admin/stock/logs                   mall:stock:list（skuId/orderNo/type，无分页）
+  A20 PUT  /api/admin/stock/{skuId}                mall:stock:adjust
+  A21 GET  /api/admin/audit-logs                   mall:audit:list（title/operName/businessType/status/beginTime/endTime）
+  A22 POST /api/admin/jobs/close-timeout-orders    mall:job:trigger
+  A23 POST /api/admin/jobs/auto-confirm-orders     mall:job:trigger
+  A24 POST /api/upload/image                       登录即可（multipart 字段 file）
+  M1–M5  /api/merchant/items[/{id}][/status]       mall:merchant:item:list/add/edit/status
+  M6–M8  /api/merchant/orders[/{orderNo}][/ship]   mall:merchant:order:list/ship
+  M9–M11 /api/merchant/stock[/logs][/{skuId}]      mall:merchant:item:list/list/edit
+  GET    /api/home/categories                      匿名（商家类目下拉，R-02 一期方案）
+DTO 字段：DashboardSummary(todayOrders,todaySales,pendingShipment,lowStockSku,totalMembers)；
+  ItemSaveRequest/SkuRequest/CategoryRequest/AuditRequest/ShipRequest/StatusRequest/
+  StockAdjustRequest 字段与前端表单/请求体逐项一致。
+
+五、设计文档落地要点（抽查）
+--------------------------------------------------------------------------------
+- 双状态分列：商品「审核状态 auditStatus」与「上下架 status」两列两标签，未合并；
+- 审核通过 ≠ 上架：审核成功文案提示"请到商品管理页手动上架"；auditStatus!==2 时上架按钮 disabled+tooltip；
+- 驳回强制下架：审核抽屉/确认文案明确"驳回后强制下架"；
+- admin 编辑不重审、merchant 编辑强制重审+下架（两套文案，未共用）；
+- reviewer：审核页无新增/编辑/上下架按钮（v-hasPermi + 后端 403 双保险）；
+- 商家隔离：merchant 接口不传 merchantId；流水查询强制 skuId/orderNo 至少一个条件；
+- 日期参数：订单 startTime/endTime、审计 beginTime/endTime 均为顶层参数，未使用 addDateRange；
+- 库存：两接口无分页 → 不渲染 pagination / 不做前端假分页，max-height 内部滚动 + 「共 N 条（全量，无分页）」；
+- 金额：MallMoney/formatMoney 两位小数，空值 —；时间：后端字符串直接展示或 parseTime；
+- receiverSnapshot：按 JSON 字符串 parse，失败降级原文；发货后 logistics 追加展示；
+- 上传：MallImageUpload 兼容 Result.data 与 AjaxResult，表单提交相对路径；
+- 请求层：统一错误提示 message + PET-xxxx + traceId 后 6 位；401 只弹一次；429 读 Retry-After。
+
+六、未做项 / 联调前提（重要）
+--------------------------------------------------------------------------------
+1. 运行期联调未执行：本机无 Maven、JDK 为 25（后端要求 JDK 17），后端未构建/启动，
+   MySQL shop 库当前连接不可用（127.0.0.1:3306 拒绝连接），Redis 服务未启动。
+   因此"真实登录 → 10 个菜单动态加载 → 接口取数"的浏览器级验收未做，需按 RUNBOOK 启动
+   后端后回归（建议顺序见设计文档 §9.3 S1–S10）。
+2. db/04_fix_menu_route_name.sql 未执行（无可用数据库连接）：首次联调前请执行，
+   否则 /mall/items、/mall/orders 可能被商家同名路由覆盖（R-01，设计文档 §4.2/§9.5 第21项）。
+3. 环境变量/代理未改动：开发期 VITE_APP_BASE_API=/dev-api，生产 /prod-api；
+   `npm run dev`、`npm run build:prod` 均可直接使用（本次构建未改 vite.config.js）。
+4. 未安装/未引入 ESLint、Vitest、Playwright（设计文档 §8.7 列为变更项，非本次交付前置）；
+   本次以 mall-check.mjs + 生产构建作为静态验收。
+
+七、已知设计偏差（均为有意、已在 AI 编程日志 AI-006 登记）
+--------------------------------------------------------------------------------
+1. AuditDrawer 增加可选 prop readonly（用于审核页"查看"只读抽屉，评审可见）；
+2. OrderDetailDrawer/ShipDialog 增加 failed 事件（失败时让页面刷新列表/详情）；
+3. 商家编辑在售商品存在页面 + 抽屉两次二次确认（UX 冗余，逻辑安全）；
+4. 库存低库存行高亮保留（辅助），同时按文档要求对库存单元格红色加粗 + 0 显示"缺货"；
+5. 会员"性别"字段后端不存在，未造该列（§5.7.4 也未列）。
+
+================================================================================
+生成方式：
+  cd admin-ui && node scripts/mall-check.mjs
+  cd admin-ui && npm.cmd run build:prod
+证据文件：verify/mall-frontend-20261026.txt
+================================================================================

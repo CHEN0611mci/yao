@@ -1,105 +1,61 @@
-# 萌宠优选 · 超市/宠物商城管理系统
+# 萌宠优选 · 宠物商城系统
 
-基于 **RuoYi-Vue 3.9.2**（Spring Boot + Vue3）二次开发的宠物商城系统，包含后台管理端、会员端接口与商城业务模块（`ruoyi-mall`）。
+基于 **RuoYi-Vue 3.9.2**（Spring Boot + Vue3）二次开发的宠物商城系统，包含后台管理端、会员端接口与商城业务模块 `ruoyi-mall`。
 
-> 课程/小组项目交付仓库。演示账号仅用于本地验收，正式部署前请修改密码与 `TOKEN_SECRET`。
+> 同伴交付的《萌宠优选_后端交接包》内容已全部合并进本仓库根目录（不再保留“交接包”文件夹），并把本地原有文档/脚本中的独有内容合并进来，重复副本已清理。
 
-## 1. 仓库内容
+## 目录结构
 
 ```text
-超市管理系统/
-├─ 萌宠优选_后端交接包/            ← 主体交付包（源码 + SQL + 启动脚本 + 文档）
-│  ├─ backend/                     RuoYi 3.9.2 多模块源码（含 ruoyi-mall）
-│  ├─ admin-ui/                    RuoYi-Vue3 管理前端源码
-│  ├─ db/                          01_base / 02_pet_mall / 03_seed / verify / rollback
-│  ├─ config/backend.env.example   后端配置模板（复制为 backend.env 后填写密码）
-│  ├─ setup/                       环境预检、建库、启动、停止、冒烟脚本
-│  ├─ docs/                        需求 / 设计 / 数据库 / 测试 / AI 日志
-│  ├─ README.md                    交接包快速开始（推荐先看）
-│  └─ RUNBOOK.md                   运行、排错、验收手册
-└─ docs/                           项目级需求与设计文档
+Aiwork5/
+├─ backend/      后端源码（RuoYi + ruoyi-mall）
+├─ admin-ui/     管理前端（已含 node_modules、.env、package-lock）
+├─ config/       配置模板与本机 backend.env（含密码，Git 忽略）
+├─ db/           SQL 脚本与执行证据
+├─ docs/         需求 / 设计 / 数据库 / 规划 / AI 日志（已合并本地独有版本）
+├─ scripts/      DB / Redis 工具与文档生成脚本
+├─ setup/        环境预检、建库、启动、停止、冒烟脚本
+├─ verify/       验收证据
+├─ README.md    本文件
+├─ RUNBOOK.md   运行、排错、验收手册
+├─ VERSION.txt  交接包版本
+└─ *.bat        环境预检、建库、启停、冒烟入口
 ```
 
-以下内容**未纳入仓库**（`.gitignore` 排除，避免仓库臃肿与信息泄露）：
+## 快速开始
 
-| 排除项 | 原因 |
-|---|---|
-| `mysql-8.0.46-winx64/` | 本机 MySQL 完整安装目录，请自行安装 MySQL 8.0 |
-| `RuoYi-Vue-master/` | 原版若依基座副本，功能已被 `backend/` 覆盖，且含本机明文密码 |
-| `萌宠优选_后端交接包_20261019/`、`*.zip` | 历史版本 / 压缩包，与最新交接包重复 |
-| `**/target/`、`**/node_modules/`、`*.jar` | Maven / npm 构建产物，可重新生成 |
-| `config/backend.env`、`_start.ps1` 等 | 含本机数据库密码与路径 |
-| `*-check.txt`、`*.log`、`*.pid` | 本机环境探测与运行日志 |
-
-> `dist/ruoyi-admin.jar` 因体积原因未入库；`start-backend.bat` 在没有 JAR 时会自动用 Maven 从源码构建。
-
-## 2. 环境要求
-
-| 软件 | 版本 | 说明 |
-|---|---|---|
-| Windows | 10/11 | 启动脚本基于 PowerShell 5.1+ |
-| JDK | 17+（推荐 17/21） | 需可执行 `java -version` |
-| MySQL | 8.0 | 端口 3306，需 root 密码 |
-| Redis | 7.x | 端口 6379，登录 / Token / 验证码依赖 |
-| Maven | 3.9.x | 仅在需要从源码构建后端时使用 |
-| Node.js | 18+（建议 20/24） | 仅运行管理前端时需要 |
-
-## 3. 快速开始（后端）
+后端（需 JDK 17、MySQL 8、Redis 7），在项目根目录执行：
 
 ```powershell
-cd 萌宠优选_后端交接包
-
-# 1) 启动 MySQL 与 Redis，确认：
-mysql -uroot -p -e "SELECT VERSION();"
-redis-cli ping      # 期望 PONG
-
-# 2) 环境预检
-.\check-env.bat
-
-# 3) 初始化数据库 shop（按提示输入 root 密码）
-.\init-db.bat
-
-# 4) 配置后端
-copy config\backend.env.example config\backend.env
-#    编辑 backend.env，填写 DB_PASSWORD
-
-# 5) 启动（无 dist JAR 时自动 Maven 构建）
-.\start-backend.bat
-
-# 6) 验收（预期 PASS=30 FAIL=0）
-.\smoke-test.bat
+.\check-env.bat       # 环境预检
+.\init-db.bat         # 初始化 shop 数据库（首次）
+.\start-backend.bat   # 启动后端，默认 8080
+.\smoke-test.bat      # 冒烟验收
 ```
 
-启动成功后：
+管理前端（Node 18+）：
 
-- Swagger：<http://localhost:8080/swagger-ui.html>
-- 验证码接口：<http://localhost:8080/captchaImage>
-- 停止：`.\stop-backend.bat`
-
-## 4. 快速开始（管理前端）
-
-```bash
-cd 萌宠优选_后端交接包/admin-ui
-npm install
-npm run dev
+```powershell
+cd admin-ui
+npm run dev           # 默认端口 80，代理到 localhost:8080
 ```
 
-默认请求后端 `http://localhost:8080`（见 `vite.config.js`），请先启动后端。
+商城管理端页面已按《管理端前端详细设计 v1.0》实现：`/mall/*` 8 个管理页（工作台、商品管理、商品审核、类目管理、订单管理、会员管理、库存总览、审计日志）+ `/merchant/*` 2 个商家页（我的商品、我的订单）。
 
-## 5. 演示账号
+```powershell
+cd admin-ui
+node scripts/mall-check.mjs   # 商城前端静态自检（页面/路由名/权限码/import/SFC 编译）
+npm.cmd run build:prod        # 生产构建 → dist/
+```
 
-| 账号 | 密码 | 用途 |
-|---|---|---|
-| `admin` | `admin123` | 后台超级管理员 |
-| `merchant1` | `merchant123` | 商家（`merchant_id=9001`） |
-| `reviewer` | `reviewer123` | 审核员（最小权限） |
-| `member1` / `member2` | `member123` | 前台会员（数据隔离演示） |
+- 商城接口（`/api/admin/**`、`/api/merchant/**`、`/api/upload/**`、`/api/home/**`）统一走 `src/utils/mallRequest.js`；若依接口仍走 `src/utils/request.js`。
+- 首次联调前建议执行 `db/04_fix_menu_route_name.sql`：管理端与商家端的 `items`/`orders` 路由同名，需给 3201/3202 补 `route_name`（设计文档 R-01；重跑 `03_seed.sql` 后需再次执行）。
 
-## 6. 已验收项
+更多说明见 `RUNBOOK.md`；交接包原始说明已归档到 `docs/后端交接包_交付说明.md`。
 
-- Maven：8 个模块 `BUILD SUCCESS`
-- 数据库：`verify.sql` 35 项 PASS（`shop` 库 45 张表）
-- 后端冒烟：30 项 PASS（验证码、公开商品、会员登录/地址/购物车/订单、后台商品/分类/会员/订单/库存/看板）
-- 权限隔离：商家不可进后台管理、审核员仅看待审队列、会员 Token 不可访问后台接口
+## Git 说明
 
-详细步骤与排错见 `萌宠优选_后端交接包/README.md` 与 `RUNBOOK.md`。
+- 分支：`main`（本地仓库，暂无远程）
+- 只跟踪项目源码 / SQL / 文档 / 脚本，及 `.gitattributes`、`.gitignore` 等必要文件
+- 本机环境与辅助文件不入库：`dev-redis/`、`msi-logs/`、`mysql-backup/`、`release/`、`ch09_png/`、课程笔记、安装日志等
+- `node_modules/`、`target/`、`*.jar`、`.env*`、`config/backend.env`、日志与备份由 `.gitignore` 排除
