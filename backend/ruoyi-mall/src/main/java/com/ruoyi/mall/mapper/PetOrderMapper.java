@@ -37,7 +37,7 @@ public interface PetOrderMapper
 
     int updateToPaid(@Param("orderNo") String orderNo);
 
-    int cancel(@Param("orderNo") String orderNo, @Param("memberId") Long memberId,
+    int cancel(@Param("id") Long id, @Param("memberId") Long memberId,
             @Param("reason") String reason);
 
     int confirm(@Param("orderNo") String orderNo, @Param("memberId") Long memberId);
@@ -50,7 +50,7 @@ public interface PetOrderMapper
     int updateShipInfo(@Param("orderNo") String orderNo, @Param("merchantId") Long merchantId,
             @Param("receiverSnapshot") String receiverSnapshot);
 
-    int close(@Param("orderNo") String orderNo, @Param("reason") String reason);
+    int close(@Param("id") Long id, @Param("reason") String reason);
 
     List<PetOrder> selectTimeoutOrders(@Param("limit") int limit);
 

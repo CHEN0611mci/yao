@@ -53,7 +53,7 @@ public class MessageService
     }
 
     /**
-     * 发布站内消息事件，事务提交后由监听器落库。
+     * 发布站内消息事件，在事务提交前由监听器与业务一起落库。
      */
     public void notify(Long memberId, String type, String title, String content, String targetUrl)
     {

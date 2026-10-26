@@ -2,8 +2,6 @@ package com.ruoyi.mall.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import com.ruoyi.mall.domain.PetMessage;
@@ -11,7 +9,7 @@ import com.ruoyi.mall.event.MemberMessageEvent;
 import com.ruoyi.mall.mapper.PetMessageMapper;
 
 /**
- * 会员消息监听器：仅在业务事务提交后写入，避免回滚产生脏消息。
+ * 会员消息监听器：提交前使用业务事务的连接写入，与业务一起提交或回滚。
  *
  * @author ruoyi
  */
@@ -22,8 +20,9 @@ public class MemberMessageListener
     private PetMessageMapper messageMapper;
     @Autowired private MemberFeatureService memberFeatures;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    // AFTER_COMMIT + REQUIRES_NEW retains the outer connection while waiting
+    // for another one; concurrent commits can exhaust the entire connection pool.
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT, fallbackExecution = true)
     public void onMemberMessage(MemberMessageEvent event)
     {
         if (event == null || event.memberId() == null)

@@ -17,6 +17,8 @@ public interface PetCategoryMapper
 
     PetCategory selectById(@Param("id") Long id);
 
+    PetCategory selectForUpdate(@Param("id") Long id);
+
     int countChildren(@Param("parentId") Long parentId);
 
     int countItems(@Param("categoryId") Long categoryId);

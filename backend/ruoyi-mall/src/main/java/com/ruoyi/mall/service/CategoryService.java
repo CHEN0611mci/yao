@@ -50,6 +50,7 @@ public class CategoryService
     @Transactional(rollbackFor = Exception.class)
     public PetCategory create(CategoryRequest request)
     {
+        lockCategories(null, request.parentId());
         verifyParent(request.parentId(), null);
         PetCategory category = new PetCategory();
         apply(category, request);
@@ -60,7 +61,7 @@ public class CategoryService
     @Transactional(rollbackFor = Exception.class)
     public PetCategory update(Long id, CategoryRequest request)
     {
-        PetCategory category = get(id);
+        PetCategory category = lockCategories(id, request.parentId());
         verifyParent(request.parentId(), id);
         apply(category, request);
         categoryMapper.update(category);
@@ -70,7 +71,7 @@ public class CategoryService
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id)
     {
-        get(id);
+        lockCategories(id, null);
         if (categoryMapper.countChildren(id) > 0)
         {
             throw new BizException(ErrorCode.PET_1003, "请先删除子分类");
@@ -144,7 +145,7 @@ public class CategoryService
         {
             throw new BizException(ErrorCode.PET_1001, "上级分类不能是自己");
         }
-        PetCategory parent = categoryMapper.selectById(parentId);
+        PetCategory parent = categoryMapper.selectForUpdate(parentId);
         if (parent == null)
         {
             throw new BizException(ErrorCode.PET_1001, "上级分类不存在");
@@ -157,6 +158,27 @@ public class CategoryService
         {
             throw new BizException(ErrorCode.PET_1001, "上级分类不能是自己的下级");
         }
+        if (selfId != null && categoryMapper.countChildren(selfId) > 0)
+        {
+            throw new BizException(ErrorCode.PET_1001, "该分类下有子分类，请先移动子分类；分类最多支持两级");
+        }
+    }
+
+    private PetCategory lockCategories(Long selfId, Long parentId)
+    {
+        // Child creation locks its parent too, serializing it with moves/deletes.
+        // Lock by ID to make opposing moves acquire rows in the same order.
+        Set<Long> ids = new java.util.TreeSet<>();
+        if (selfId != null) ids.add(selfId);
+        if (parentId != null && parentId != 0L) ids.add(parentId);
+        PetCategory self = null;
+        for (Long id : ids)
+        {
+            PetCategory row = categoryMapper.selectForUpdate(id);
+            if (row == null) throw new BizException(ErrorCode.PET_1001, "分类不存在");
+            if (id.equals(selfId)) self = row;
+        }
+        return self;
     }
 
     private void apply(PetCategory category, CategoryRequest request)

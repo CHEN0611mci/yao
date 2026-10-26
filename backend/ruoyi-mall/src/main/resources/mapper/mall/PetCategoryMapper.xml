@@ -20,6 +20,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         SELECT <include refid="columns"/> FROM pet_category WHERE id = #{id}
     </select>
 
+    <select id="selectForUpdate" resultType="com.ruoyi.mall.domain.PetCategory">
+        SELECT <include refid="columns"/> FROM pet_category WHERE id = #{id} FOR UPDATE
+    </select>
+
     <select id="countChildren" resultType="int">
         SELECT COUNT(*) FROM pet_category WHERE parent_id = #{parentId}
     </select>

@@ -18,4 +18,10 @@ UNION ALL SELECT 'R07 valid preferences', IF(COUNT(*)=0,'PASS','FAIL')
  FROM pet_member_preference WHERE order_notifications NOT IN (0,1) OR system_notifications NOT IN (0,1)
 UNION ALL SELECT 'R08 successful payment order and amount', IF(COUNT(*)=0,'PASS','FAIL')
  FROM pet_payment p LEFT JOIN pet_order o ON o.order_no=p.order_no
- WHERE p.status='SUCCESS' AND (o.id IS NULL OR o.status NOT IN (2,3,4,7,8) OR p.amount<>o.pay_amount);
+ WHERE p.status='SUCCESS' AND (o.id IS NULL OR o.status NOT IN (2,3,4,7,8) OR p.amount<>o.pay_amount)
+UNION ALL SELECT 'R09 two-level category tree', IF(COUNT(*)=0,'PASS','FAIL')
+ FROM pet_category c LEFT JOIN pet_category parent ON parent.id=c.parent_id
+ WHERE c.parent_id<>0 AND (parent.id IS NULL OR parent.parent_id<>0)
+UNION ALL SELECT 'R10 product category references', IF(COUNT(*)=0,'PASS','FAIL')
+ FROM pet_item i LEFT JOIN pet_category c ON c.id=i.category_id
+ WHERE i.del_flag='0' AND c.id IS NULL;

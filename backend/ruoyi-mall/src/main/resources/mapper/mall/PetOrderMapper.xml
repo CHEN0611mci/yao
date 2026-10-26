@@ -85,7 +85,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="cancel">
         UPDATE pet_order
         SET status = 5, cancel_reason = #{reason}, close_time = NOW(), update_time = NOW()
-        WHERE order_no = #{orderNo} AND member_id = #{memberId} AND status = 0
+        WHERE id = #{id} AND member_id = #{memberId} AND status = 0
     </update>
 
     <update id="confirm">
@@ -113,7 +113,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     <update id="close">
         UPDATE pet_order
         SET status = 6, cancel_reason = #{reason}, close_time = NOW(), update_time = NOW()
-        WHERE order_no = #{orderNo} AND status = 0
+        WHERE id = #{id} AND status = 0
     </update>
 
     <select id="selectTimeoutOrders" resultType="com.ruoyi.mall.domain.PetOrder">

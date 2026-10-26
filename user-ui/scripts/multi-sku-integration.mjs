@@ -40,6 +40,12 @@ const stamp = Date.now(),
   orders = [],
   checks = [],
   failures = []
+async function allFinished(promises) {
+  const results = await Promise.allSettled(promises)
+  const failed = results.find((r) => r.status === 'rejected')
+  if (failed) throw failed.reason
+  return results.map((r) => r.value)
+}
 async function raw(url, method = 'GET', data, token = '') {
   return fetch(base + url, {
     method,
@@ -85,7 +91,7 @@ try {
     await api(`/api/admin/items/${p.id}/status`, 'PUT', { status: 1 }, admin)
   }
   const buyers = await Promise.all(
-    Array.from({ length: 12 }, async (_, i) => {
+    Array.from({ length: Number(process.env.MULTI_BUYERS || 12) }, async (_, i) => {
       const buyer = await api('/api/member/register', 'POST', {
         username: `multi${stamp}${i}`,
         nickname: '多规格并发验收',
@@ -223,16 +229,17 @@ try {
   )
   sql(`UPDATE pet_item_sku SET price=0.01 WHERE id=${sku.id}`)
   // Two compensation runs plus cancellations and new checkouts share the same four SKUs.
-  const batch = await Promise.all(
+  const batch = await allFinished(
     buyers.map((b, i) => submit(b, i % 2 ? [...groups[1]].reverse() : groups[1])),
   )
-  const expired = batch.slice(0, 6),
-    cancelled = batch.slice(6)
+  const split = Math.floor(batch.length / 2)
+  const expired = batch.slice(0, split),
+    cancelled = batch.slice(split)
   assert.ok(expired.every((o) => /^PM\d+$/.test(o.orderNo)))
   sql(
     `UPDATE pet_order SET expire_at=DATE_SUB(NOW(), INTERVAL 1 SECOND) WHERE order_no IN (${expired.map((o) => `'${o.orderNo}'`).join(',')})`,
   )
-  await Promise.all([
+  await allFinished([
     api('/api/admin/jobs/close-timeout-orders', 'POST', undefined, admin),
     api('/api/admin/jobs/close-timeout-orders', 'POST', undefined, admin),
     ...cancelled.map((o) =>
@@ -249,12 +256,18 @@ try {
     )
   }
   checks.push({
-    name: '12 initial orders + two timeout jobs + six cancels + 12 checkouts',
+    name: `${buyers.length} initial orders + two timeout jobs + ${cancelled.length} cancels + ${buyers.length} checkouts`,
     passed: true,
   })
+} catch (error) {
+  failures.push({ phase: 'extended regression', message: error.message })
 } finally {
-  for (const o of orders)
-    await api(`/api/orders/${o.orderNo}/cancel`, 'POST', { reason: '回归清理恢复库存' }, o.token)
+  for (const o of orders) {
+    const current = await api(`/api/orders/${o.orderNo}`, 'GET', undefined, o.token)
+    if (current.status === 0)
+      await api(`/api/orders/${o.orderNo}/cancel`, 'POST', { reason: '回归清理恢复库存' }, o.token)
+    else assert.ok([5, 6].includes(current.status), 'Unexpected fixture state during cleanup')
+  }
   for (const p of products) {
     const current = await api(`/api/items/${p.id}`)
     checks.push({

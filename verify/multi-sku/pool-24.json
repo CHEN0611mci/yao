@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-26T20:32:12.628Z",
+  "productIds": [
+    51,
+    52
+  ],
+  "checks": [
+    {
+      "name": "2 SKU reversed submit",
+      "total": 24,
+      "passed": 24
+    },
+    {
+      "name": "2 SKU concurrent cancel",
+      "total": 24,
+      "passed": 24
+    },
+    {
+      "name": "4 SKU reversed submit",
+      "total": 24,
+      "passed": 24
+    },
+    {
+      "name": "4 SKU concurrent cancel",
+      "total": 24,
+      "passed": 24
+    },
+    {
+      "name": "checkout uses current price after catalog lock wait",
+      "passed": true
+    },
+    {
+      "name": "24 initial orders + two timeout jobs + 12 cancels + 24 checkouts",
+      "passed": true
+    },
+    {
+      "name": "item 51 stock restored",
+      "passed": true
+    },
+    {
+      "name": "item 52 stock restored",
+      "passed": true
+    }
+  ],
+  "failures": []
+}

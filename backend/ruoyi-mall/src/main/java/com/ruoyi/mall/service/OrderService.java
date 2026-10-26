@@ -183,7 +183,9 @@ public class OrderService
         {
             finalReason = finalReason.substring(0, 200);
         }
-        int rows = orderMapper.cancel(orderNo, memberId, finalReason);
+        // Use the exact PK. A member/status range can hold gap locks that block
+        // new orders while this transaction waits to restore SKU stock.
+        int rows = orderMapper.cancel(order.getId(), memberId, finalReason);
         if (rows == 0)
         {
             throw new BizException(ErrorCode.PET_3002, "订单状态已变化，请刷新后重试");
@@ -279,7 +281,7 @@ public class OrderService
         for (PetOrder order : orders)
         {
             Boolean changed = transaction.execute(status -> {
-                if (orderMapper.close(order.getOrderNo(), "支付超时自动关闭") == 0) return false;
+                if (orderMapper.close(order.getId(), "支付超时自动关闭") == 0) return false;
                 rollbackStock(order, "支付超时关单", "system:timeout");
                 messageService.notify(order.getMemberId(), "ORDER", "订单已关闭",
                         "订单" + order.getOrderNo() + "因超时未支付已自动关闭。",

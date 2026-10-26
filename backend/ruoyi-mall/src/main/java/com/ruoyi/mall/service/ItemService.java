@@ -171,7 +171,7 @@ public class ItemService
         {
             throw new BizException(ErrorCode.PET_1001, "商户不能为空");
         }
-        if (categoryMapper.selectById(request.categoryId()) == null)
+        if (categoryMapper.selectForUpdate(request.categoryId()) == null)
         {
             throw new BizException(ErrorCode.PET_1001, "分类不存在");
         }
@@ -200,7 +200,7 @@ public class ItemService
         {
             throw new BizException(ErrorCode.PET_3003);
         }
-        if (categoryMapper.selectById(request.categoryId()) == null)
+        if (categoryMapper.selectForUpdate(request.categoryId()) == null)
         {
             throw new BizException(ErrorCode.PET_1001, "分类不存在");
         }

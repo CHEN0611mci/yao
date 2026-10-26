@@ -31,8 +31,8 @@ public record ItemSaveRequest(
         Integer supportSubscribe,
         Integer isPrescription,
         String detail,
-        @Valid List<SkuRequest> skus,
-        @Valid List<ImageRequest> images
+        @Valid List<@NotNull(message = "商品规格不能包含空项") SkuRequest> skus,
+        @Valid List<@NotNull(message = "商品图片不能包含空项") ImageRequest> images
 )
 {
 }

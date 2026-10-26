@@ -64,6 +64,9 @@ public class TokenService
     {
         // 获取请求携带的令牌
         String token = getToken(request);
+        // Storefront member sessions use opaque UUID tokens, resolved by the
+        // member interceptor. They cannot authenticate a RuoYi admin session.
+        if (token != null && token.chars().filter(c -> c == '.').count() != 2) return null;
         if (StringUtils.isNotEmpty(token))
         {
             try
