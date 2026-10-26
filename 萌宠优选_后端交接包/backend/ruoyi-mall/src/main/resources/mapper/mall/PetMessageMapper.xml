@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mall.mapper.PetMessageMapper">
+
+    <insert id="insert" parameterType="com.ruoyi.mall.domain.PetMessage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pet_message (member_id, type, title, content, target_url, read_flag, create_time)
+        VALUES (#{memberId}, #{type}, #{title}, #{content}, #{targetUrl}, 0, NOW())
+    </insert>
+
+    <select id="selectByMember" resultType="com.ruoyi.mall.domain.PetMessage">
+        SELECT id, member_id, type, title, content, target_url, read_flag, create_time
+        FROM pet_message
+        WHERE member_id = #{memberId}
+        <if test="readFlag != null">AND read_flag = #{readFlag}</if>
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="countUnread" resultType="long">
+        SELECT COUNT(*) FROM pet_message WHERE member_id = #{memberId} AND read_flag = 0
+    </select>
+
+    <update id="markRead">
+        UPDATE pet_message SET read_flag = 1 WHERE id = #{id} AND member_id = #{memberId}
+    </update>
+
+    <update id="markAllRead">
+        UPDATE pet_message SET read_flag = 1 WHERE member_id = #{memberId} AND read_flag = 0
+    </update>
+</mapper>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mall.mapper.PetOrderMapper">
+
+    <sql id="columns">
+        id, order_no, member_id, merchant_id, total_amount, discount_amount, freight, pay_amount,
+        status, receiver_snapshot, pet_snapshot, remark, client_token, expire_at, pay_time,
+        ship_time, receive_time, close_time, cancel_reason, create_time, update_time
+    </sql>
+
+    <select id="selectByOrderNo" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order WHERE order_no = #{orderNo} LIMIT 1
+    </select>
+
+    <select id="selectByOrderNoAndMember" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order
+        WHERE order_no = #{orderNo} AND member_id = #{memberId} LIMIT 1
+    </select>
+
+    <select id="selectByClientToken" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order
+        WHERE member_id = #{memberId} AND client_token = #{clientToken} LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.ruoyi.mall.domain.PetOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pet_order
+            (order_no, member_id, merchant_id, total_amount, discount_amount, freight, pay_amount,
+             status, receiver_snapshot, pet_snapshot, remark, client_token, expire_at, create_time, update_time)
+        VALUES
+            (#{orderNo}, #{memberId}, #{merchantId}, #{totalAmount}, #{discountAmount}, #{freight},
+             #{payAmount}, #{status}, #{receiverSnapshot}, #{petSnapshot}, #{remark}, #{clientToken},
+             #{expireAt}, NOW(), NOW())
+    </insert>
+
+    <select id="selectMemberOrders" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order
+        WHERE member_id = #{memberId}
+        <if test="status != null">AND status = #{status}</if>
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectAdminOrders" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order
+        <where>
+            <if test="orderNo != null and orderNo != ''">AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+            <if test="memberId != null">AND member_id = #{memberId}</if>
+            <if test="merchantId != null">AND merchant_id = #{merchantId}</if>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="startTime != null and startTime != ''">AND create_time &gt;= #{startTime}</if>
+            <if test="endTime != null and endTime != ''">AND create_time &lt;= #{endTime}</if>
+        </where>
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <select id="selectMerchantOrders" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order
+        WHERE merchant_id = #{merchantId}
+        <if test="status != null">AND status = #{status}</if>
+        <if test="orderNo != null and orderNo != ''">AND order_no LIKE CONCAT('%', #{orderNo}, '%')</if>
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <!-- 支付成功：0 待付款 -> 2 待发货，条件更新保证只推进一次 -->
+    <update id="updateToPaid">
+        UPDATE pet_order
+        SET status = 2, pay_time = NOW(), update_time = NOW()
+        WHERE order_no = #{orderNo} AND status = 0
+    </update>
+
+    <update id="cancel">
+        UPDATE pet_order
+        SET status = 5, cancel_reason = #{reason}, close_time = NOW(), update_time = NOW()
+        WHERE order_no = #{orderNo} AND member_id = #{memberId} AND status = 0
+    </update>
+
+    <update id="confirm">
+        UPDATE pet_order
+        SET status = 4, receive_time = NOW(), update_time = NOW()
+        WHERE order_no = #{orderNo} AND member_id = #{memberId} AND status = 3
+    </update>
+
+    <update id="ship">
+        UPDATE pet_order
+        SET status = 3, ship_time = NOW(), update_time = NOW()
+        WHERE order_no = #{orderNo} AND merchant_id = #{merchantId} AND status = 2
+    </update>
+
+    <update id="updateShipInfo">
+        UPDATE pet_order
+        SET status = 3, ship_time = NOW(), receiver_snapshot = #{receiverSnapshot}, update_time = NOW()
+        WHERE order_no = #{orderNo}
+        <if test="merchantId != null">
+            AND merchant_id = #{merchantId}
+        </if>
+        AND status = 2
+    </update>
+
+    <update id="close">
+        UPDATE pet_order
+        SET status = 6, cancel_reason = #{reason}, close_time = NOW(), update_time = NOW()
+        WHERE order_no = #{orderNo} AND status = 0
+    </update>
+
+    <select id="selectTimeoutOrders" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order
+        WHERE status = 0 AND expire_at &lt;= NOW()
+        ORDER BY id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectAutoConfirmOrders" resultType="com.ruoyi.mall.domain.PetOrder">
+        SELECT <include refid="columns"/> FROM pet_order
+        WHERE status = 3 AND ship_time IS NOT NULL
+          AND ship_time &lt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        ORDER BY id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countTodayOrders" resultType="long">
+        SELECT COUNT(*) FROM pet_order WHERE DATE(create_time) = CURDATE()
+    </select>
+
+    <select id="sumTodaySales" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(pay_amount), 0) FROM pet_order
+        WHERE status IN (2, 3, 4) AND DATE(pay_time) = CURDATE()
+    </select>
+
+    <select id="countPendingShipment" resultType="long">
+        SELECT COUNT(*) FROM pet_order WHERE status = 2
+    </select>
+</mapper>

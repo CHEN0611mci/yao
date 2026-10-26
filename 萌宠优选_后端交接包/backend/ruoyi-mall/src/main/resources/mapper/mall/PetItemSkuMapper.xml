@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mall.mapper.PetItemSkuMapper">
+
+    <sql id="columns">
+        id, item_id, spec_name, price, stock, sku_code, image, status, create_time, update_time
+    </sql>
+
+    <select id="selectByItemId" resultType="com.ruoyi.mall.domain.PetItemSku">
+        SELECT <include refid="columns"/> FROM pet_item_sku
+        WHERE item_id = #{itemId}
+        <if test="onlyEnabled">AND status = 1</if>
+        ORDER BY price ASC, id ASC
+    </select>
+
+    <select id="selectById" resultType="com.ruoyi.mall.domain.PetItemSku">
+        SELECT <include refid="columns"/> FROM pet_item_sku WHERE id = #{id} LIMIT 1
+    </select>
+
+    <select id="selectStock" resultType="java.lang.Integer">
+        SELECT stock FROM pet_item_sku WHERE id = #{id}
+    </select>
+
+    <!-- 原子扣减：影响行数 0 即库存不足，禁止先查后改 -->
+    <update id="deductStock">
+        UPDATE pet_item_sku
+        SET stock = stock - #{quantity}, update_time = NOW()
+        WHERE id = #{id} AND status = 1 AND stock &gt;= #{quantity}
+    </update>
+
+    <update id="increaseStock">
+        UPDATE pet_item_sku
+        SET stock = stock + #{quantity}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <insert id="insert" parameterType="com.ruoyi.mall.domain.PetItemSku" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pet_item_sku
+            (item_id, spec_name, price, stock, sku_code, image, status, create_time, update_time)
+        VALUES
+            (#{itemId}, #{specName}, #{price}, #{stock}, #{skuCode}, #{image}, #{status}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.mall.domain.PetItemSku">
+        UPDATE pet_item_sku
+        SET spec_name = #{specName}, price = #{price}, stock = #{stock}, sku_code = #{skuCode},
+            image = #{image}, status = #{status}, update_time = NOW()
+        WHERE id = #{id} AND item_id = #{itemId}
+    </update>
+
+    <delete id="deleteByItemId">
+        DELETE FROM pet_item_sku WHERE item_id = #{itemId}
+    </delete>
+
+    <select id="countByItemId" resultType="int">
+        SELECT COUNT(*) FROM pet_item_sku WHERE item_id = #{itemId}
+    </select>
+
+    <select id="selectStockOverview" resultType="java.util.LinkedHashMap">
+        SELECT s.id AS skuId, s.item_id AS itemId, i.title AS title, s.spec_name AS specName,
+               s.sku_code AS skuCode, s.price AS price, s.stock AS stock, s.status AS skuStatus,
+               i.status AS itemStatus, i.audit_status AS auditStatus, i.merchant_id AS merchantId
+        FROM pet_item_sku s
+        JOIN pet_item i ON i.id = s.item_id AND i.del_flag = '0'
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (i.title LIKE CONCAT('%', #{keyword}, '%')
+                     OR s.sku_code LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="itemId != null">AND s.item_id = #{itemId}</if>
+            <if test="merchantId != null">AND i.merchant_id = #{merchantId}</if>
+            <if test="lowStock != null and lowStock">AND s.stock &lt;= #{threshold}</if>
+        </where>
+        ORDER BY s.stock ASC, s.id ASC
+    </select>
+
+    <select id="selectLowStock" resultType="java.util.LinkedHashMap">
+        SELECT s.id AS skuId, s.item_id AS itemId, i.title AS title, s.spec_name AS specName,
+               s.stock AS stock, s.sku_code AS skuCode
+        FROM pet_item_sku s
+        JOIN pet_item i ON i.id = s.item_id AND i.del_flag = '0'
+        WHERE s.stock &lt;= #{threshold} AND s.status = 1 AND i.status = 1 AND i.audit_status = 2
+        ORDER BY s.stock ASC, s.id ASC
+        LIMIT #{limit}
+    </select>
+</mapper>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mall.mapper.PetItemAuditMapper">
+
+    <select id="selectByItemId" resultType="com.ruoyi.mall.domain.PetItemAudit">
+        SELECT id, item_id, audit_status, auditor, remark, create_time
+        FROM pet_item_audit
+        WHERE item_id = #{itemId}
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.ruoyi.mall.domain.PetItemAudit" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pet_item_audit (item_id, audit_status, auditor, remark, create_time)
+        VALUES (#{itemId}, #{auditStatus}, #{auditor}, #{remark}, NOW())
+    </insert>
+</mapper>

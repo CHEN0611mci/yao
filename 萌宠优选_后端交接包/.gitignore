@@ -1,0 +1,70 @@
+# ============================================================================
+# 萌宠优选 · 宠物商城系统  .gitignore
+# 目标：仓库只保留源码/文档/SQL/脚本；构建产物、依赖、日志、密钥、运行数据不入库
+# ============================================================================
+
+# ---------- IDE / 操作系统 ----------
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.suo
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ---------- Java / Maven ----------
+**/target/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# ---------- Node / 前端 ----------
+**/node_modules/
+**/dist/
+**/.vite/
+**/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- 环境变量 / 密钥 ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# ---------- 运行数据 / 日志 / 备份 ----------
+logs/
+*.log
+dev-redis/data/
+dev-redis/log/
+uploads/
+backup/
+*.sql.gz
+
+# ---------- 课程素材 / 压缩包（按需保留） ----------
+ch09_png/
+*.zip
+
+# ---------- 临时文件 ----------
+*.tmp
+*.bak
+*.swp
+*~
+
+# ---------- handoff package / build output ----------
+release/
+setup/env-report.txt
+config/backend.env
+run/
+data/
+verify/smoke-result.txt
+

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.mall.mapper.PetCategoryMapper">
+
+    <sql id="columns">
+        id, parent_id, name, icon, sort, pet_scope, status, create_time, update_time
+    </sql>
+
+    <select id="selectList" resultType="com.ruoyi.mall.domain.PetCategory">
+        SELECT <include refid="columns"/> FROM pet_category
+        <where>
+            <if test="status != null">status = #{status}</if>
+        </where>
+        ORDER BY parent_id ASC, sort ASC, id ASC
+    </select>
+
+    <select id="selectById" resultType="com.ruoyi.mall.domain.PetCategory">
+        SELECT <include refid="columns"/> FROM pet_category WHERE id = #{id}
+    </select>
+
+    <select id="countChildren" resultType="int">
+        SELECT COUNT(*) FROM pet_category WHERE parent_id = #{parentId}
+    </select>
+
+    <select id="countItems" resultType="int">
+        SELECT COUNT(*) FROM pet_item WHERE category_id = #{categoryId} AND del_flag = '0'
+    </select>
+
+    <insert id="insert" parameterType="com.ruoyi.mall.domain.PetCategory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO pet_category (parent_id, name, icon, sort, pet_scope, status, create_time, update_time)
+        VALUES (#{parentId}, #{name}, #{icon}, #{sort}, #{petScope}, #{status}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.ruoyi.mall.domain.PetCategory">
+        UPDATE pet_category
+        SET parent_id = #{parentId}, name = #{name}, icon = #{icon}, sort = #{sort},
+            pet_scope = #{petScope}, status = #{status}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM pet_category WHERE id = #{id}
+    </delete>
+</mapper>

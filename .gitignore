@@ -1,0 +1,76 @@
+# ============================================================================
+# 萌宠优选 · 宠物商城系统  仓库根 .gitignore
+#
+# 原则：只跟踪项目有效文件（源码 / SQL / 文档 / 脚本 / 配置模板）。
+# 本机环境、辅助开发文件、构建产物、依赖、日志、备份均不入库。
+# ============================================================================
+
+# ---------- 根目录白名单：只保留项目必需入口，其余根目录文件一律忽略 ----------
+/*
+!/.gitattributes
+!/.gitignore
+!/README.md
+!/db/
+!/docs/
+!/scripts/
+!/setup/
+!/萌宠优选_后端交接包/
+
+# ---------- Java / Maven 构建产物 ----------
+**/target/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# ---------- Node / 前端依赖与产物 ----------
+**/node_modules/
+**/dist/
+**/.vite/
+**/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- Python 缓存（文档生成脚本） ----------
+**/__pycache__/
+*.pyc
+
+# ---------- 环境变量 / 密钥（禁止入库） ----------
+.env
+.env.*
+!.env.example
+!*.env.example
+**/config/backend.env
+*.pem
+*.key
+*.p12
+*.jks
+
+# ---------- 日志 / 运行数据 / 备份 ----------
+logs/
+*.log
+*.sql.gz
+*.pid
+uploads/
+backup/
+*.tmp
+*.bak
+*.swp
+*~
+
+# ---------- IDE / 操作系统 ----------
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+*.suo
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ---------- 本机预检报告 ----------
+setup/env-report.txt

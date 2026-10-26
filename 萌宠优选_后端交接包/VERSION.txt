@@ -1,0 +1,7 @@
+﻿萌宠优选 · 宠物商城系统 后端交接包
+Version: v2.0
+Build date: 2026-10-19
+JAR: dist\ruoyi-admin.jar
+JAR SHA256: 2832b67140706ce79489bc76aa6d7bed908d5b2ee529492fb1c7b956c1d72a84
+Database: MySQL 8.0 / shop / 45 tables
+Validation: verify.sql 35 PASS; smoke-test.ps1 30 PASS
