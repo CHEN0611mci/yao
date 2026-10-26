@@ -1,0 +1,32 @@
+{
+  "at": "2026-10-26T20:51:17.920Z",
+  "checks": [
+    "new sessions atomically indexed: PASS",
+    "restart migrates legacy UUID-less session without extending TTL or exposing tokens: PASS",
+    "5000 foreign sessions do not add per-request token reads; KEYS/SCAN calls stay zero: PASS",
+    "single-session revoke is owned and immediately invalidates authentication: PASS",
+    "expired session is pruned from member index: PASS",
+    "sliding renewal updates token and index lifetimes together: PASS",
+    "concurrent renewal and revoke cannot recreate the revoked session: PASS",
+    "revoke-others preserves current and foreign sessions: PASS",
+    "password change removes own index and sessions without touching foreign sessions: PASS",
+    "logout invalidates session immediately: PASS"
+  ],
+  "baseline": {
+    "requests": 10,
+    "medianMs": 7.88,
+    "p95Ms": 10.63,
+    "getCalls": 40,
+    "keysCalls": 0,
+    "scanCalls": 0
+  },
+  "with5000ForeignSessions": {
+    "requests": 20,
+    "medianMs": 6.34,
+    "p95Ms": 8.4,
+    "getCalls": 80,
+    "keysCalls": 0,
+    "scanCalls": 0
+  },
+  "note": "Timings are local samples, not production capacity measurements. No secrets in receipt."
+}

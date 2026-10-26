@@ -1,6 +1,5 @@
 package com.ruoyi.mall.common;
 
-import java.util.Collection;
 import java.util.UUID;
 import java.util.List;
 import java.util.ArrayList;
@@ -31,6 +30,7 @@ public class MemberTokenService
     @Autowired
     private RedisCache redisCache;
     @Autowired private PetMemberMapper memberMapper;
+    @Autowired private MemberSessionIndex sessionIndex;
 
     @Value("${mall.member-token-days:7}")
     private int tokenDays;
@@ -47,7 +47,7 @@ public class MemberTokenService
             if (ua != null && !ua.isBlank()) client = ua.substring(0, Math.min(ua.length(),200));
         }
         session.setClient(client);
-        redisCache.setCacheObject(TOKEN_KEY_PREFIX + token, session, tokenDays * 24 * 60, TimeUnit.MINUTES);
+        sessionIndex.create(session, TimeUnit.DAYS.toMillis(tokenDays));
         return token;
     }
 
@@ -57,13 +57,13 @@ public class MemberTokenService
         {
             return null;
         }
-        MemberSession session = redisCache.getCacheObject(TOKEN_KEY_PREFIX + token);
+        MemberSession session = sessionIndex.read(token);
         if (session != null)
         {
             PetMember member = memberMapper.selectById(session.getMemberId());
             if (member == null || Integer.valueOf(1).equals(member.getStatus()))
             {
-                redisCache.deleteObject(TOKEN_KEY_PREFIX + token);
+                sessionIndex.remove(session);
                 throw new BizException(member == null ? ErrorCode.PET_2001 : ErrorCode.PET_2004);
             }
         }
@@ -76,7 +76,7 @@ public class MemberTokenService
         MemberSession session = getSession(token);
         if (session != null && redisCache.getExpire(TOKEN_KEY_PREFIX + token) < 24 * 60 * 60)
         {
-            redisCache.expire(TOKEN_KEY_PREFIX + token, tokenDays, TimeUnit.DAYS);
+            if (!sessionIndex.refresh(session, TimeUnit.DAYS.toMillis(tokenDays))) return null;
         }
         return session;
     }
@@ -92,29 +92,18 @@ public class MemberTokenService
         String token = resolveToken(request);
         if (StringUtils.isNotEmpty(token))
         {
-            redisCache.deleteObject(TOKEN_KEY_PREFIX + token);
+            MemberSession session = sessionIndex.read(token);
+            if (session != null) sessionIndex.remove(session);
         }
     }
 
     public void invalidateByMemberId(Long memberId)
     {
-        Collection<String> keys = redisCache.keys(TOKEN_KEY_PREFIX + "*");
-        if (keys == null || keys.isEmpty())
-        {
-            return;
-        }
-        for (String key : keys)
-        {
-            MemberSession session = redisCache.getCacheObject(key);
-            if (session != null && memberId.equals(session.getMemberId()))
-            {
-                redisCache.deleteObject(key);
-            }
-        }
+        sessionIndex.removeOthers(memberId, null);
     }
 
     public record SessionView(String id, String client, Long loginAt, Long expiresAt, boolean current) { }
-    private String sessionId(MemberSession session)
+    static String sessionId(MemberSession session)
     {
         return session.getSessionId() != null ? session.getSessionId()
                 : UUID.nameUUIDFromBytes(("session:" + session.getToken()).getBytes(StandardCharsets.UTF_8)).toString();
@@ -122,38 +111,24 @@ public class MemberTokenService
     public List<SessionView> sessions(Long memberId, String currentToken)
     {
         List<SessionView> result = new ArrayList<>();
-        for (String key : redisCache.keys(TOKEN_KEY_PREFIX + "*"))
+        for (var active : sessionIndex.active(memberId))
         {
-            MemberSession session = redisCache.getCacheObject(key);
-            if(session == null || !memberId.equals(session.getMemberId())) continue;
-            long ttl = redisCache.getExpire(key);
-            if(ttl <= 0) continue;
+            MemberSession session = active.session();
             result.add(new SessionView(sessionId(session), session.getClient() == null ? "历史会话" : session.getClient(),
-                    session.getLoginAt(),System.currentTimeMillis() + ttl * 1000, session.getToken().equals(currentToken)));
+                    session.getLoginAt(),System.currentTimeMillis() + active.ttlMillis(), session.getToken().equals(currentToken)));
         }
         result.sort(Comparator.comparing(SessionView::current).reversed().thenComparing(SessionView::loginAt, Comparator.nullsLast(Comparator.reverseOrder())));
         return result;
     }
     public boolean revoke(Long memberId,String id)
     {
-        for(String key : redisCache.keys(TOKEN_KEY_PREFIX + "*"))
-        {
-            MemberSession session = redisCache.getCacheObject(key);
-            if(session != null && memberId.equals(session.getMemberId()) && sessionId(session).equals(id))
-                return redisCache.deleteObject(key);
-        }
+        MemberSession session = sessionIndex.owned(memberId, id);
+        if (session != null && sessionIndex.remove(session)) return true;
         throw new ForbiddenException("会话不存在或无权访问");
     }
     public int revokeOthers(Long memberId,String currentToken)
     {
-        int count = 0;
-        for(String key : redisCache.keys(TOKEN_KEY_PREFIX + "*"))
-        {
-            MemberSession session = redisCache.getCacheObject(key);
-            if(session != null && memberId.equals(session.getMemberId()) && !session.getToken().equals(currentToken)
-                    && redisCache.deleteObject(key)) count++;
-        }
-        return count;
+        return sessionIndex.removeOthers(memberId, currentToken);
     }
 
     public static String resolveToken(HttpServletRequest request)

@@ -4,7 +4,7 @@ param([string]$OutputDirectory = '')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $OutputDirectory) { $OutputDirectory = Join-Path (Split-Path -Parent $projectRoot) '交付包' }
-$bundleName = 'pet-mall-v2.2.2-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
+$bundleName = 'pet-mall-v2.3.0-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
 $stage = Join-Path $OutputDirectory $bundleName
 $jar = Join-Path $projectRoot 'backend\ruoyi-admin\target\ruoyi-admin.jar'
 foreach ($required in @($jar, (Join-Path $projectRoot 'user-ui\dist\index.html'), (Join-Path $projectRoot 'admin-ui\dist\index.html'))) {
@@ -23,14 +23,14 @@ function Copy-Tree([string]$relative) {
         Copy-Item -LiteralPath $_.FullName -Destination $destination
     }
 }
-foreach ($tree in @('backend','user-ui','admin-ui','setup','db','verify\repair','verify\member-features','verify\multi-sku','verify\catalog-boundary','verify\user-ui')) { Copy-Tree $tree }
+foreach ($tree in @('backend','user-ui','admin-ui','setup','db','verify\repair','verify\member-features','verify\multi-sku','verify\catalog-boundary','verify\session-index','verify\user-ui')) { Copy-Tree $tree }
 New-Item -ItemType Directory -Path (Join-Path $stage 'dist'), (Join-Path $stage 'config'), (Join-Path $stage 'docs') -Force | Out-Null
 Copy-Item -LiteralPath $jar -Destination (Join-Path $stage 'dist\ruoyi-admin.jar')
 Copy-Item -LiteralPath (Join-Path $projectRoot 'config\backend.env.example') -Destination (Join-Path $stage 'config\backend.env.example')
 foreach ($file in @('start-mall.bat','start-user-ui.bat','start-admin-runtime.bat','start-backend.bat','stop-backend.bat','init-db.bat','check-env.bat','smoke-test.bat','README.md','RUNBOOK.md','VERSION.txt')) {
     Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination (Join-Path $stage $file)
 }
-foreach ($report in @('修复记录-v1.1.0.md','功能完善-v1.2.0.md','复查记录-v2.2.1.md','复查记录-v2.2.2.md')) { Copy-Item -LiteralPath (Join-Path $projectRoot ('docs\' + $report)) -Destination (Join-Path $stage ('docs\' + $report)) }
+foreach ($report in @('修复记录-v1.1.0.md','功能完善-v1.2.0.md','复查记录-v2.2.1.md','复查记录-v2.2.2.md','会话优化-v2.3.0.md')) { Copy-Item -LiteralPath (Join-Path $projectRoot ('docs\' + $report)) -Destination (Join-Path $stage ('docs\' + $report)) }
 @'
 # 修复版完整运行包
 
@@ -41,6 +41,7 @@ foreach ($report in @('修复记录-v1.1.0.md','功能完善-v1.2.0.md','复查�
 5. 启动时自动增量升级三张表（收藏、偏好、支付幂等映射），保留旧数据。支付为沙箱。详细范围及验收见 docs/功能完善-v1.2.0.md。
 6. v2.2.1 修复多规格下单、取消的并发死锁；本轮范围与验收见 docs/复查记录-v2.2.1.md。
 7. v2.2.2 修复分类层级/空项校验、订单索引锁及消息连接池耗尽，复查见 docs/复查记录-v2.2.2.md。
+8. v2.3.0 优化会员会话索引，启动自动迁移旧会话，正常运行不再全站扫描令牌，见 docs/会话优化-v2.3.0.md。
 '@ | Set-Content -LiteralPath (Join-Path $stage 'README-先看这里.md') -Encoding UTF8
 $manifest = Get-ChildItem -LiteralPath $stage -File -Recurse | ForEach-Object {
     [pscustomobject]@{ path = $_.FullName.Substring($stage.Length + 1).Replace('\','/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower() }

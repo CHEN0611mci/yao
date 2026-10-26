@@ -342,3 +342,9 @@ curl.exe -X POST http://127.0.0.1:8080/api/member/login `
 ## 内存不足排错（v2.2.0）
 
 Windows 报错 1455 / insufficient memory / 页面文件太小时，JDK 本身可能仍已安装。版本探测现使用 16–64MB 堆；后端默认 128–512MB 堆，Maven 未配置 MAVEN_OPTS 时使用 32–384MB。若系统提交内存仍耗尽，关闭不使用的程序或调整 Windows 页面文件，再运行 start-mall.bat。脚本不会修改系统页面文件或终止其他应用。
+
+## 会话索引升级（v2.3.0）
+
+正常运行 `start-mall.bat` 即可。后端启动日志出现 `Member session index ready` 表示旧登录态索引迁移完成；无需清空 Redis 或重新初始化数据库。索引为 `member_sessions:<memberId>`，它与相应令牌一起续期，退出或过期时清理。日常设备管理不再遍历全站令牌。
+
+集成验收：在 `user-ui` 下运行 `node scripts/session-index-integration.mjs`。它会重启本项目后端以验证旧会话迁移，创建并清理 5000 个临时 Redis 会话，结果写入 `verify/session-index/receipt.json`。需要本机 redis-cli，并从忽略的 `config/backend.env` 读取 Redis 连接设置；非默认安装路径可设置 `REDIS_CLI`。
