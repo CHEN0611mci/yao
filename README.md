@@ -55,11 +55,18 @@ npm.cmd run build:prod        # 生产构建 → dist/
 - 商城接口（`/api/admin/**`、`/api/merchant/**`、`/api/upload/**`、`/api/home/**`）统一走 `src/utils/mallRequest.js`；若依接口仍走 `src/utils/request.js`。
 - 首次联调前建议执行 `db/04_fix_menu_route_name.sql`：管理端与商家端的 `items`/`orders` 路由同名，需给 3201/3202 补 `route_name`（设计文档 R-01；重跑 `03_seed.sql` 后需再次执行）。
 
+用户端（`user-ui`，客户前台）设计已定稿，工程尚未创建：
+
+- 设计文档：`docs/02-设计文档/用户端前端详细设计_v1.0.md`（§3 真实接口契约 U01–U38、§5 十八个页面逐页设计、§6 请求层/组件/store、§7 十四条关键流程、§9 实施与验收）
+- 规划形态：新建 `user-ui/`（Vue 3 + Vite 6 + Element Plus + Pinia + Vue Router 4），开发端口 **81**，代理 `/api` 与 `/profile` → `http://localhost:8080`
+- 实施入口：按设计文档 §9.1 WBS 建卡、§9.3 十五步联调、§9.4 DoD 验收；演示账号 `member1/member123`、`member2/member123`
+
 更多说明见 `RUNBOOK.md`；交接包原始说明已归档到 `docs/后端交接包_交付说明.md`。
 
 ## Git 说明
 
-- 主分支：`master`（整合后的唯一主线）；历史中保留了协作者的 10 次提交（合并提交 `d439bb5`，双父：`a5e86d5` + `4392d2a`）
+- 主分支：`master`（整合后的唯一主线）；历史保留协作者的全部提交：平铺化合并 `d439bb5`（双父 `a5e86d5` + `4392d2a`），以及随后 `c71e738`（用户端前端详细设计 v1.0）的合并
+- 远端两个分支 `master` / `main` 均指向同一条主线（GitHub 上 `main` 仅作兼容保留）
 - 远端：
   - `origin` → Gitee `https://gitee.com/yee_8_0/yao.git`
   - `github` → GitHub `https://github.com/CHEN0611mci/yao.git`
