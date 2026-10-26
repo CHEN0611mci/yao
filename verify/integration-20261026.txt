@@ -1,0 +1,109 @@
+================================================================================
+萌宠优选 · 宠物商城系统 — 协作者分支整合验收证据
+日期：2026-10-26
+范围：把协作者推送的 admin-ui 商城管理端实现（含设计文档/DB 补丁/验收证据）
+      合并进本地 master，并统一为「仓库根目录平铺」结构
+环境：Windows 10.0.26200 / Node v24.21.0 / npm 11.19.0 / Vite 6.4.1 / Vue 3.5.26
+================================================================================
+
+一、双方基线
+--------------------------------------------------------------------------------
+本地 master（整合前）  a5e86d5  chore: 添加 .gitattributes 统一换行符
+                        841 个跟踪文件；结构为 萌宠优选_后端交接包/{backend,admin-ui,db,...}
+协作者 github/main      4392d2a  fix(admin-ui): 前端联调修正组件与页面，seed 内置菜单 route_name
+                        877 个跟踪文件；10 个提交；结构为根目录平铺 {backend,admin-ui,db,docs,...}
+历史关系                两条无共同祖先的历史（unrelated histories）
+
+二、差异清单（git diff --name-status -M HEAD github/main）
+--------------------------------------------------------------------------------
+纯重命名（内容 0 行变更）  834 个（交接包路径 → 根目录平铺路径）
+新增（仅在协作者分支）      44 个：
+  admin-ui/src/views/mall/**            10 个页面
+  admin-ui/src/components/mall/**       10 个公共组件
+  admin-ui/src/api/mall/**               9 个 API 模块
+  admin-ui/src/utils/mallRequest.js、mallDict.js
+  admin-ui/scripts/mall-check.mjs        静态自检脚本（270 行）
+  db/04_fix_menu_route_name.sql          R-01 同名路由补丁
+  docs/02-设计文档/管理端前端详细设计_v1.0.md
+  docs/02-设计文档/用户端前端项目设计_v1.0.md
+  docs/01-需求文档/历史版本/v1.0/*（md + docx）
+  docs/00-规划与分工/assignment_image.png
+  docs/04-AI日志/AI编程日志.md           AI-001～AI-007（你原有 3 条已包含）
+  verify/mall-frontend-20261026.txt      协作者的前端交付证据
+修改                        2 个：.gitignore、README.md
+仅在本地                   4 个：docs/ 根目录 2 份重复副本（已核对为 pet_mall→shop 更正前的旧版）、
+                           交接包 .gitignore、交接包 docs/04-AI日志/AI编程日志.md
+
+三、整合动作
+--------------------------------------------------------------------------------
+1) git merge github/main --allow-unrelated-histories --no-commit
+   → 冲突仅 .gitignore、README.md（add/add），均采用协作者平铺版（内容更完整）
+2) git rm -r 萌宠优选_后端交接包
+   → 后端 834 个文件为逐字节相同的纯迁移，删除包裹目录后内容由根目录承载
+3) git rm docs/宠物商城系统_企业级设计文档_v1.0.md
+        docs/宠物商城系统_企业级需求文档_v2.0.md
+   → 与 docs/02-设计文档、docs/01-需求文档 下版本重复；后者为 pet_mall→shop 更正后的新版
+4) 合并提交 d439bb5（双父：a5e86d5 + 4392d2a）
+   → 合并后跟踪文件 877 个，顶层为 backend/ admin-ui/ config/ db/ docs/ scripts/ setup/ verify/ + *.bat
+
+四、一致性验证（证明未破坏原有内容）
+--------------------------------------------------------------------------------
+命令：git diff --stat backup/pre-integrate:萌宠优选_后端交接包/backend HEAD:backend
+结果：无输出（后端源码逐字节一致，0 文件变更）
+
+命令：git diff --stat backup/pre-integrate:萌宠优选_后端交接包/admin-ui HEAD:admin-ui
+结果：32 files changed, 8660 insertions(+), 0 deletions(-)
+      （仅新增商城页面/组件/API/工具/自检脚本，若依基座 0 删除 0 修改）
+
+五、前端可构建性验证（本机实测）
+--------------------------------------------------------------------------------
+1) 依赖安装
+   命令：cd admin-ui && npm install --registry=https://registry.npmmirror.com
+   结果：added 527 packages in 32s
+
+2) 静态自检（协作者脚本）
+   命令：cd admin-ui && node scripts/mall-check.mjs
+   结果：
+     ==== 商城管理端前端静态自检 ====
+     检查页面：10 个；检查 SFC：20 个
+     全部静态检查通过 ✔
+
+3) 生产构建
+   命令：cd admin-ui && npm.cmd run build:prod
+   结果：vite v6.4.1 / 2587 modules transformed / ✓ built in 13.08s / EXIT=0
+   产物：dist/ 含 index.html、favicon.ico、loading.css、static/{css,gif,jpg,js,png}
+         （已确认无 dist/d:/... 异常 gzip 目录）
+
+六、为跑通构建所做的环境适配（均已入库或写入说明）
+--------------------------------------------------------------------------------
+1) 新增 admin-ui/.env.example（入库，供他人复制）
+   新增 admin-ui/.env.development、.env.production（本地使用，按 .gitignore 的 .env.* 规则不入库）
+   变量：VITE_APP_TITLE / VITE_APP_ENV / VITE_APP_BASE_API / VITE_BUILD_COMPRESS
+   原因：协作者的 .env 文件被 .gitignore 排除，合并后 index.html 的 %VITE_APP_TITLE%
+         无法替换，构建报 "…is not defined in env variables"。
+2) admin-ui/index.html：内联 <style>…</style> 抽为 public/loading.css 外链
+   原因：Vite 6.4.1 在 Windows 中文路径下处理 HTML inline-css 代理时报
+         [vite:html-inline-proxy] Could not load …index.html?html-proxy&inline-css&index=0.css
+       外链后视觉与加载行为不变，构建通过（样式内容原样保留，4650 字节）。
+3) .env.production 的 VITE_BUILD_COMPRESS 由 gzip 改为 none
+   原因：vite-plugin-compression 在该环境把 .gz 写到 dist/d:/chenchen/... 异常嵌套路径；
+         gzip 改由 Nginx（gzip / gzip_static）承担，交付产物更干净。
+
+七、未做项（需在具备后端环境的机器上回归）
+--------------------------------------------------------------------------------
+1) 后端编译/启动：本机 java、mvn 均不在 PATH，未执行 mvn package；
+   但第四节已证明 backend/ 与整合前逐字节一致（整合前该包曾 BUILD SUCCESS）。
+2) 运行期联调：需 JDK 17 + MySQL(shop) + Redis(6379) 就绪后，按 RUNBOOK 启动后端，
+   登录 → 10 个菜单动态加载 → 各页取数/新增/审核/发货/库存调整。
+3) db/04_fix_menu_route_name.sql 未执行（需可用数据库连接；重跑 03_seed.sql 后需再次执行）。
+
+八、结论
+--------------------------------------------------------------------------------
+整合完成：双方历史以合并提交 d439bb5 会聚，结构统一为根目录平铺；
+后端零变更，前端新增 32 个文件可自检、可构建；差异与未做项已如实登记。
+================================================================================
+生成方式：以上命令均在本仓库根目录/`admin-ui` 实测，日志见下
+  git diff --stat backup/pre-integrate:萌宠优选_后端交接包/backend HEAD:backend
+  cd admin-ui && node scripts/mall-check.mjs
+  cd admin-ui && npm.cmd run build:prod
+================================================================================

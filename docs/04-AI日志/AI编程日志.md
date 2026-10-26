@@ -132,6 +132,24 @@
 
 ---
 
+## AI-008 整合协作者 `main` 分支（管理端前端落地）并统一为根目录平铺结构
+
+| 字段 | 内容 |
+|---|---|
+| 编号 | AI-008 |
+| 日期 | 2026-10-26 |
+| 阶段 | P5 整合与回归（协作者分支合并） |
+| 工具与模型 | Cline（VS Code Agent，Claude 系模型） |
+| Prompt 原文 | "现在我的仓库协作者把他完成的部分上传到了仓库，请把我的和他的整合到一起" |
+| 生成摘要 | fetch 到协作者分支 `github/main`（`4392d2a`，10 次提交、877 文件、根目录平铺）；与本地 `master`（`a5e86d5`，841 文件、`萌宠优选_后端交接包/` 包裹）为无共同祖先历史。以 `git merge --allow-unrelated-histories` 生成合并提交 `d439bb5`（双父 `a5e86d5` + `4392d2a`）；冲突仅 `.gitignore`/`README.md`（add/add），取平铺版；删除包裹目录（含 834 个 0 行变更的纯重命名）与根 `docs/` 两份重复副本；README 改为平铺结构与双远端说明；补 `.env.example`（入库）及本地 `.env.development`/`.env.production`；`index.html` 内联样式抽为 `public/loading.css`；`VITE_BUILD_COMPRESS` 改 `none`；新增 `verify/integration-20261026.txt` |
+| 是否采纳 | 采纳 |
+| 修改理由 | ① 协作者分支已把交接包内容并入平铺结构，`git diff -M` 显示 834 个文件为 0 行变更的纯迁移，删除包裹目录不丢信息且结构更规范；② 根 `docs/` 两份副本经比对为 `pet_mall→shop` 更正前的旧版（新版在 `docs/01-需求文档`、`docs/02-设计文档`）；③ 协作者的 `.env` 被 `.gitignore` 排除，合并后构建缺 `VITE_APP_TITLE`，必须补环境文件；④ Vite 6.4.1 在 Windows 中文路径下处理 HTML inline-css 代理报错，外链 CSS 为最小修复；⑤ `vite-plugin-compression` 把 `.gz` 写到 `dist/d:/...` 异常路径，改由 Nginx 承担压缩 |
+| 人工修改点 | 解决 `.gitignore`/`README.md` add/add 冲突（取平铺版后按双远端改写 Git 说明与目录名）；`git rm -r 萌宠优选_后端交接包`；删除根 `docs/` 两份重复副本；新增三个 `.env` 文件；用脚本精确抽取 `<style>` 到 `public/loading.css` 并替换为 `<link>`；`.env.production` 压缩改 `none`；登记 `verify/integration-20261026.txt` 与 `verify/README.md` |
+| 测试验证结果 | 后端一致性：`git diff --stat backup/pre-integrate:萌宠优选_后端交接包/backend HEAD:backend` 无输出（逐字节一致）；前端增量：`admin-ui` 32 files / +8660 / -0；`npm install` 527 包 32s；`node scripts/mall-check.mjs` 10 页面 / 20 SFC 全部通过；`npm.cmd run build:prod` vite 6.4.1、2587 modules、`✓ built in 13.08s`、EXIT=0，`dist/` 含 `index.html`/`loading.css`/`static`（无异常 `.gz` 路径）；未执行：后端 `mvn package`（本机 `java`/`mvn` 不在 PATH）、运行期联调（需 JDK17 + MySQL + Redis）、`db/04_fix_menu_route_name.sql` |
+| 证据路径 | `verify/integration-20261026.txt`、`verify/README.md`、`README.md`、`admin-ui/.env.example`、`admin-ui/public/loading.css` |
+
+---
+
 ## 记录模板（后续追加）
 
 | 字段 | 内容 |

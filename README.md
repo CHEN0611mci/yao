@@ -39,7 +39,9 @@
 
 ```powershell
 cd admin-ui
-npm run dev           # 默认端口 80，代理到 localhost:8080
+copy .env.example .env.development   # 首次：生成开发环境变量（接口前缀 /dev-api）
+npm install                          # 首次：安装依赖（约 527 个包，可用国内镜像）
+npm run dev                          # 默认端口 80，代理到 localhost:8080
 ```
 
 商城管理端页面已按《管理端前端详细设计 v1.0》实现：`/mall/*` 8 个管理页（工作台、商品管理、商品审核、类目管理、订单管理、会员管理、库存总览、审计日志）+ `/merchant/*` 2 个商家页（我的商品、我的订单）。
