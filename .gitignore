@@ -10,17 +10,7 @@
 !/.gitattributes
 !/.gitignore
 !/README.md
-!/db/
-!/docs/
-!/scripts/
-!/setup/
 !/shop/
-
-# ---------- shop/ 内只跟踪交接包内容；若依基座副本、压缩包、IDE 文件不入库 ----------
-/shop/RuoYi-Vue-master/
-/shop/RuoYi-Vue3-master/
-/shop/RuoYi-Vue3-master.zip
-/shop/.idea/
 
 # ---------- Java / Maven 构建产物 ----------
 **/target/
@@ -77,6 +67,3 @@ backup/
 Thumbs.db
 Desktop.ini
 .DS_Store
-
-# ---------- 本机预检报告 ----------
-setup/env-report.txt

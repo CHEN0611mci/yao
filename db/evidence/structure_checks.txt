@@ -1,9 +1,0 @@
-+----------------+------------------+-------------------------------------------------------------------+
-| TABLE_NAME     | CONSTRAINT_NAME  | CHECK_CLAUSE                                                      |
-+----------------+------------------+-------------------------------------------------------------------+
-| pet_cart_item  | chk_cart_qty     | ((`quantity` >= 1) and (`quantity` <= 99))                        |
-| pet_item_sku   | chk_sku_price    | (`price` > 0)                                                     |
-| pet_item_sku   | chk_sku_stock    | (`stock` >= 0)                                                    |
-| pet_member_pet | chk_pet_weight   | ((`weight` is null) or ((`weight` >= 0.1) and (`weight` <= 100))) |
-| pet_order      | chk_order_amount | (`pay_amount` >= 0)                                               |
-+----------------+------------------+-------------------------------------------------------------------+
