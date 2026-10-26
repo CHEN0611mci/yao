@@ -77,7 +77,7 @@
  *
  * - props.merchant=false 调 admin 调整接口 A20；true 调商家调整接口 M11
  * - targetStock 是「目标库存」而非增量；后端计算 change = targetStock - 当前库存
- * - change = 0 时后端不写流水，前端禁用提交；减少库存必须二次确认
+ * - change = 0 时后端不写流水，前端禁用提交；增加/减少库存均需二次确认（§5.8.5）
  * - 成功提示与关闭由本组件负责；失败保持弹窗（请求层已统一提示）
  *   PET-3001（库存不足以调整为目标值）属于并发变化，emit adjusted 让页面重拉库存
  */
@@ -227,14 +227,13 @@ function handleSubmit() {
       proxy.$modal.msgWarning('目标库存与当前库存一致，无需调整（不会写入流水）')
       return
     }
-    // 减少库存（可能被订单并发扣减导致 PET-3001）必须二次确认
-    if (change < 0) {
-      const tip = `确认将 SKU ${props.row?.skuCode || skuId} 库存由 ${currentStock.value} 调整为 ${targetStock}？将减少 ${Math.abs(change)} 件并写入库存流水。`
-      try {
-        await proxy.$modal.confirm(tip)
-      } catch (e) {
-        return
-      }
+    // 每次实际调整（增加/减少）都必须二次确认（§5.8.5 页面行为；§6.6「减少时确认」以页面行为为准）
+    const skuLabel = props.row?.skuCode || skuId
+    const tip = `确认将 SKU ${skuLabel} 库存由 ${currentStock.value} 调整为 ${targetStock}？将写入库存流水。`
+    try {
+      await proxy.$modal.confirm(tip)
+    } catch (e) {
+      return
     }
     const payload = {
       targetStock,

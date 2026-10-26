@@ -28,7 +28,7 @@
         />
       </el-form-item>
       <el-form-item label="审核状态" prop="auditStatus">
-        <el-select v-model="queryParams.auditStatus" placeholder="全部" clearable style="width: 180px">
+        <el-select v-model="queryParams.auditStatus" placeholder="审核状态" style="width: 180px">
           <el-option v-for="item in auditStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
@@ -145,6 +145,8 @@ import MallStatusTag from '@/components/mall/MallStatusTag.vue'
 const { proxy } = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
+// 本页路由 path（keep-alive 缓存的组件在其他页面 query 变化时用于过滤）
+const pagePath = route.path
 
 const loading = ref(false)
 const loadFailed = ref(false)
@@ -214,28 +216,49 @@ function buildQueryParams() {
   return params
 }
 
-function syncQueryToUrl() {
+/** 当前筛选对应的 URL query（字段与 buildQueryParams 一致，值统一为字符串） */
+function currentQuery() {
   const params = buildQueryParams()
   const query = {}
   Object.keys(params).forEach(key => {
     query[key] = String(params[key])
   })
-  router.replace({ path: route.path, query }).catch(() => {})
+  return query
 }
 
+/** 查询条件同步到 URL（刷新保持，§5.1.5） */
+function syncQueryToUrl() {
+  router.replace({ path: pagePath, query: currentQuery() }).catch(() => {})
+}
+
+/** 是否与当前筛选一致（避免自身写 URL 触发重复查询/死循环） */
+function isSameQuery(query, target) {
+  const keys = Object.keys(query || {})
+  if (keys.length !== Object.keys(target).length) return false
+  return keys.every(key => String(query[key]) === String(target[key]))
+}
+
+/** 进页/keep-alive 下路由 query 变化时回填（先清空旧筛选，再按 URL 重建） */
 function initQueryFromRoute() {
   const query = route.query || {}
-  if (query.keyword) queryParams.keyword = String(query.keyword)
-  const categoryId = Number(query.categoryId)
-  if (Number.isInteger(categoryId) && categoryId > 0) queryParams.categoryId = categoryId
-  if (query.auditStatus !== undefined && query.auditStatus !== '') {
-    const auditStatus = Number(query.auditStatus)
-    if (!Number.isNaN(auditStatus)) queryParams.auditStatus = auditStatus
-  }
-  const pageNum = Number(query.pageNum)
-  if (Number.isInteger(pageNum) && pageNum > 0) queryParams.pageNum = pageNum
-  const pageSize = Number(query.pageSize)
-  if (Number.isInteger(pageSize) && pageSize > 0) queryParams.pageSize = pageSize
+  queryParams.keyword = query.keyword ? String(query.keyword) : undefined
+  queryParams.categoryId = toPositiveNumber(query.categoryId)
+  const auditStatus = toNumber(query.auditStatus)
+  // 本页无「全部」选项：URL 未带 auditStatus 时回到默认待审队列（§5.4.3）
+  queryParams.auditStatus = auditStatus === undefined ? 0 : auditStatus
+  queryParams.pageNum = toPositiveNumber(query.pageNum) ?? 1
+  queryParams.pageSize = toPositiveNumber(query.pageSize) ?? 10
+}
+
+function toNumber(value) {
+  if (value === undefined || value === null || value === '') return undefined
+  const num = Number(value)
+  return Number.isNaN(num) ? undefined : num
+}
+
+function toPositiveNumber(value) {
+  const num = toNumber(value)
+  return num !== undefined && num > 0 ? num : undefined
 }
 
 async function getList() {
@@ -301,6 +324,17 @@ function handleView(row) {
 function handleAudited() {
   getList()
 }
+
+// keep-alive 下从快捷入口再次带参跳转（如 /mall/audit?auditStatus=0）时回填并重查
+watch(
+  () => route.fullPath,
+  () => {
+    if (route.path !== pagePath) return
+    if (isSameQuery(route.query, currentQuery())) return
+    initQueryFromRoute()
+    getList()
+  }
+)
 
 onMounted(() => {
   initQueryFromRoute()

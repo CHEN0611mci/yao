@@ -215,12 +215,14 @@ function handleUploadError() {
 
 // 删除图片
 function handleDelete(file) {
-  const findex = fileList.value.map(f => f.rawUrl || f.url).indexOf(file.rawUrl || file.url)
-  if (findex > -1 && uploadList.value.length === number.value) {
-    fileList.value.splice(findex, 1)
-    emit('update:modelValue', listToString(fileList.value))
-    return false
-  }
+  const target = file.rawUrl || file.url
+  const findex = fileList.value.map(f => f.rawUrl || f.url).indexOf(target)
+  // 不在表单值里的文件（如上传失败留下项）交给 el-upload 自行移除，否则会残留
+  if (findex === -1) return true
+  // 上传进行中不允许删除，避免计数与列表错位
+  if (uploadList.value.length !== number.value) return false
+  fileList.value.splice(findex, 1)
+  emit('update:modelValue', listToString(fileList.value))
   return false
 }
 

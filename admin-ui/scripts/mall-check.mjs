@@ -248,7 +248,8 @@ const REQUIRED = [
   'api/mall/upload.js',
   'components/mall/MallStatusTag.vue', 'components/mall/MallMoney.vue', 'components/mall/MallImageUpload.vue',
   'components/mall/SkuEditor.vue', 'components/mall/CategoryTreeSelect.vue',
-  'components/mall/OrderDetailDrawer.vue', 'components/mall/AuditDrawer.vue', 'components/mall/StockAdjustDialog.vue'
+  'components/mall/ItemFormDrawer.vue', 'components/mall/OrderDetailDrawer.vue',
+  'components/mall/AuditDrawer.vue', 'components/mall/ShipDialog.vue', 'components/mall/StockAdjustDialog.vue'
 ]
 REQUIRED.forEach(p => {
   if (!existsSync(join(srcDir, p))) fail(`[缺失] 公共文件不存在：src/${p}`)

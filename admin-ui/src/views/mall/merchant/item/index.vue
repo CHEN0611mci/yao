@@ -464,6 +464,7 @@ import CategoryTreeSelect from '@/components/mall/CategoryTreeSelect.vue'
 const { proxy } = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
+const pagePath = route.path
 
 const auditStatusOptions = optionsOf(AUDIT_STATUS)
 const itemStatusOptions = optionsOf(ITEM_STATUS)
@@ -584,12 +585,13 @@ function initQueryFromRoute() {
   queryParams.pageSize = pickNumber(q.pageSize) || 10
 }
 
-function syncQueryToRoute() {
+/** 当前筛选对应的 URL query（值统一为字符串） */
+function currentQuery() {
   const query = {
     pageNum: String(queryParams.pageNum),
     pageSize: String(queryParams.pageSize)
   }
-  if (queryParams.keyword) query.keyword = queryParams.keyword
+  if (queryParams.keyword) query.keyword = String(queryParams.keyword)
   if (queryParams.categoryId !== undefined && queryParams.categoryId !== null && queryParams.categoryId !== '') {
     query.categoryId = String(queryParams.categoryId)
   }
@@ -599,12 +601,21 @@ function syncQueryToRoute() {
   if (queryParams.status !== undefined && queryParams.status !== null && queryParams.status !== '') {
     query.status = String(queryParams.status)
   }
-  // 与当前 URL 一致时不重复导航（避免无意义 replace）
-  const currentKeys = Object.keys(route.query)
-  const queryKeys = Object.keys(query)
-  const same = currentKeys.length === queryKeys.length && queryKeys.every(key => String(route.query[key] ?? '') === query[key])
-  if (same) return
-  router.replace({ path: route.path, query }).catch(() => {})
+  return query
+}
+
+/** 是否与当前筛选一致（避免自身写 URL 触发重复查询/死循环） */
+function isSameQuery(query, target) {
+  const keys = Object.keys(query)
+  if (keys.length !== Object.keys(target).length) return false
+  return keys.every(key => String(query[key]) === String(target[key]))
+}
+
+/** 筛选/分页同步到 URL（刷新保持） */
+function syncQueryToRoute() {
+  const query = currentQuery()
+  if (isSameQuery(route.query, query)) return
+  router.replace({ path: pagePath, query }).catch(() => {})
 }
 
 /* ------------------------------ 数据加载 ------------------------------ */
@@ -891,6 +902,17 @@ function formatOperator(operator) {
   if (operator === 'seed') return '初始化'
   return operator
 }
+
+// keep-alive 下再次带参跳转（工作台/其他页 → 本页，如 /merchant/items?auditStatus=0）时回填并重查
+watch(
+  () => route.fullPath,
+  () => {
+    if (route.path !== pagePath) return
+    if (isSameQuery(route.query, currentQuery())) return
+    initQueryFromRoute()
+    getList()
+  }
+)
 
 initQueryFromRoute()
 onMounted(loadCategories)

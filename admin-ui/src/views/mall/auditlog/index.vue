@@ -251,6 +251,7 @@ import { BUSINESS_TYPE, OPER_STATUS, optionsOf } from '@/utils/mallDict'
 
 const { proxy } = getCurrentInstance()
 const route = useRoute()
+const pagePath = route.path
 const router = useRouter()
 
 // 系统字典（走若依请求层 /system/dict/data/type/*）：操作类型 sys_oper_type、状态 sys_common_status
@@ -374,7 +375,7 @@ function syncQuery() {
   if (queryParams.endTime) query.endTime = queryParams.endTime
   if (queryParams.pageNum > 1) query.pageNum = String(queryParams.pageNum)
   if (queryParams.pageSize !== 10) query.pageSize = String(queryParams.pageSize)
-  router.replace({ path: route.path, query }).catch(() => {})
+  router.replace({ path: pagePath, query }).catch(() => {})
 }
 
 /** 查询审计日志（A21，PageResult：res.list/res.total） */

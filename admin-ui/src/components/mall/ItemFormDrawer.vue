@@ -166,9 +166,9 @@
  *   emits  update:visible / saved
  *
  * 差异：
- *   - admin 新增：调 createItem，必须带 merchantId（商家下拉或手填，演示 9001），保存后「商品已创建」
+ *   - admin 新增：调 createItem，必须带 merchantId（商家下拉或手填，placeholder 提示演示 9001，不预填），保存后「商品已创建」
  *   - admin 编辑：getItemDetail 回填 → updateItem，不重审、不改上下架，保存后「商品已更新」
- *   - merchant  ：不出现/不提交 merchantId，createMyItem/updateMyItem，编辑前二次确认「将下架并重新审核」
+ *   - merchant  ：不出现/不提交 merchantId，createMyItem/updateMyItem；「下架+重新审核」确认由商家列表页打开抽屉前完成
  */
 import { listHomeCategories } from '@/api/mall/category'
 import { createItem, getItemDetail, updateItem } from '@/api/mall/item'
@@ -369,10 +369,8 @@ async function openDrawer() {
     } finally {
       loading.value = false
     }
-  } else if (props.mode === 'admin') {
-    // 无商家列表接口：admin 新建默认演示商家 9001（§5.3.6、§7.3 待确认项）
-    form.merchantId = 9001
   }
+  // admin 新建不再预填 merchantId：由必填校验强制用户确认归属（无商家列表接口，placeholder 提示演示 9001）
   nextTick(() => formRef.value?.clearValidate())
 }
 
@@ -461,15 +459,8 @@ async function submitForm() {
   }
   if (!valid) return
 
-  // 商家编辑：明确告知「下架 + 重新审核」后果（§7.4 第3步）
-  if (props.mode === 'merchant' && props.editId) {
-    const confirmed = await proxy.$modal
-      .confirm('修改将下架该商品并重新提交平台审核，审核通过后需再次手动上架，是否继续？')
-      .then(() => true)
-      .catch(() => false)
-    if (!confirmed) return
-  }
   // 管理员编辑：改归属商家需二次确认（§5.3.6）
+  // 商家编辑的「下架 + 重新审核」确认由商家列表页在打开抽屉前完成（§5.10.5），此处不再重复确认
   if (props.mode === 'admin' && props.editId && form.merchantId !== originalMerchantId.value) {
     const confirmed = await proxy.$modal
       .confirm('修改商品归属商家将影响商家可见性，是否继续？')

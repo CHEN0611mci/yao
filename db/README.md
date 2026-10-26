@@ -16,6 +16,7 @@
 | — | `verify.sql` | 只读校验：表数量、种子数据量、约束/索引、库存与支付对账 | 是 | 输出 `PASS/FAIL`，全 PASS 即通过 |
 | — | `verify_constraints.sql` | 约束与条件扣减实测（预期报错，事务回滚不污染数据） | 是 | 验证 `ERROR 3819/1062` 与影响行数 1/0 |
 | — | `rollback.sql` | 仅 DROP 14 张 `pet_*` 表，保留若依系统表 | 是 | 保留系统表与账号 |
+| — | `04_fix_menu_route_name.sql` | 修复 R-01：给商家菜单 3201/3202 补全局唯一 `route_name`（`MerchantItems`/`MerchantOrders`） | 是（幂等 UPDATE） | 管理端与商家端 `items`/`orders` 路由同名会让 admin 的 `/mall/items`、`/mall/orders` 被覆盖成 404；**存量库执行一次，重跑 `03_seed.sql` 后无需再执行（seed 已内置）** |
 
 ### 一键脚本（推荐，Windows 双击）
 

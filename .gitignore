@@ -79,3 +79,9 @@ backup/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# ---------- Local tooling (Maven etc., not committed) ----------
+/.tools/
+
+# ---------- 前端构建临时缓存 ----------
+**/.build-tmp/

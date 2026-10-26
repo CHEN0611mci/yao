@@ -238,7 +238,7 @@ function currentQuery() {
 
 /** 筛选/分页同步到 URL */
 function syncQuery() {
-  router.replace({ path: route.path, query: currentQuery() }).catch(() => {})
+  router.replace({ path: pagePath, query: currentQuery() }).catch(() => {})
 }
 
 /** 是否与当前筛选一致（避免自身写 URL 触发重复查询） */

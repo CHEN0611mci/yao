@@ -327,16 +327,23 @@ watch(
   { immediate: true }
 )
 
-/** 拉取订单详情（商家/管理端接口二选一） */
+/** 拉取订单详情（商家/管理端接口二选一）；序号校验防止慢请求把上一单数据写进当前抽屉 */
+let loadSeq = 0
 async function loadDetail() {
   if (!props.orderNo) return
+  const seq = ++loadSeq
   loading.value = true
   loadError.value = false
+  // 切换订单时先清空，避免慢网络下串单（收货人/电话/地址等 PII）
+  detail.value = null
+  showFullReceiver.value = false
   try {
     const data = props.merchant ? await getMyOrder(props.orderNo) : await getOrderDetail(props.orderNo)
+    if (seq !== loadSeq) return
     detail.value = data || null
     if (!detail.value) loadError.value = true
   } catch (e) {
+    if (seq !== loadSeq) return
     detail.value = null
     loadError.value = true
     // 订单不存在/越权：关闭抽屉，由页面刷新列表
@@ -345,7 +352,7 @@ async function loadDetail() {
     }
     emit('failed', e)
   } finally {
-    loading.value = false
+    if (seq === loadSeq) loading.value = false
   }
 }
 

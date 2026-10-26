@@ -112,8 +112,8 @@ VALUES
   (3020, '库存调整',     3007, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'mall:stock:adjust',       '#', 'admin', @now, '', NULL, '与 AdminStockController 权限码保持一致'),
 
   (3200, '商家中心', 0, 6, 'merchant', NULL, '', '', 1, 0, 'M', '0', '0', '', 'business', 'admin', @now, '', NULL, '商家视角目录'),
-  (3201, '我的商品', 3200, 1, 'items',  'mall/merchant/item/index',  '', '', 1, 0, 'C', '0', '0', 'mall:merchant:item:list',  'goods', 'admin', @now, '', NULL, '仅本人商品'),
-  (3202, '我的订单', 3200, 2, 'orders', 'mall/merchant/order/index', '', '', 1, 0, 'C', '0', '0', 'mall:merchant:order:list', 'money', 'admin', @now, '', NULL, '仅本人商品相关订单'),
+  (3201, '我的商品', 3200, 1, 'items',  'mall/merchant/item/index',  '', 'MerchantItems', 1, 0, 'C', '0', '0', 'mall:merchant:item:list',  'goods', 'admin', @now, '', NULL, '仅本人商品'),
+  (3202, '我的订单', 3200, 2, 'orders', 'mall/merchant/order/index', '', 'MerchantOrders', 1, 0, 'C', '0', '0', 'mall:merchant:order:list', 'money', 'admin', @now, '', NULL, '仅本人商品相关订单'),
 
   (3210, '商品新增',   3201, 1, '', '', '', '', 1, 0, 'F', '0', '0', 'mall:merchant:item:add',    '#', 'admin', @now, '', NULL, ''),
   (3211, '商品修改',   3201, 2, '', '', '', '', 1, 0, 'F', '0', '0', 'mall:merchant:item:edit',   '#', 'admin', @now, '', NULL, ''),

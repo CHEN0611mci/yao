@@ -3,6 +3,7 @@
     v-model="innerValue"
     :data="treeData"
     :props="treeProps"
+    node-key="id"
     :placeholder="placeholder"
     :disabled="disabled"
     :clearable="clearable"

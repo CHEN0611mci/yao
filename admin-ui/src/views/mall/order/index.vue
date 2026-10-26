@@ -15,6 +15,8 @@
         <el-input-number
           v-model="queryParams.memberId"
           :min="1"
+          :precision="0"
+          :step-strictly="true"
           :controls="false"
           placeholder="请输入会员ID"
           style="width: 160px"
@@ -25,6 +27,8 @@
         <el-input-number
           v-model="queryParams.merchantId"
           :min="1"
+          :precision="0"
+          :step-strictly="true"
           :controls="false"
           placeholder="请输入商家ID"
           style="width: 160px"
@@ -290,7 +294,7 @@ function currentQuery() {
 
 /** 筛选/分页同步到 URL（刷新保持） */
 function syncQuery() {
-  router.replace({ path: route.path, query: currentQuery() }).catch(() => {})
+  router.replace({ path: pagePath, query: currentQuery() }).catch(() => {})
 }
 
 /** 是否与当前筛选一致（避免自身写 URL 触发重复查询） */

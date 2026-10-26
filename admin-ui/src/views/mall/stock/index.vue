@@ -355,6 +355,7 @@ import StockAdjustDialog from '@/components/mall/StockAdjustDialog.vue'
 const { proxy } = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
+const pagePath = route.path
 
 const stockLogTypeOptions = optionsOf(STOCK_LOG_TYPE)
 
@@ -417,21 +418,38 @@ function cleanParams(source) {
   return params
 }
 
-/** 进页回填（stock 页 query 键：tab/keyword/itemId/merchantId/lowStock/threshold/logSkuId/logOrderNo/logType） */
-const routeQuery = route.query || {}
+/** 筛选状态（进页 / 同页 query 变化统一由 initQueryFromRoute 回填） */
 const queryParams = reactive({
-  keyword: routeQuery.keyword ? String(routeQuery.keyword) : undefined,
-  itemId: queryNumber(routeQuery.itemId),
-  merchantId: queryNumber(routeQuery.merchantId),
-  lowStock: routeQuery.lowStock === 'true' || routeQuery.lowStock === '1',
-  threshold: queryNumber(routeQuery.threshold) === undefined ? 10 : queryNumber(routeQuery.threshold)
+  keyword: undefined,
+  itemId: undefined,
+  merchantId: undefined,
+  lowStock: false,
+  threshold: 10
 })
 const logParams = reactive({
-  skuId: queryNumber(routeQuery.logSkuId),
-  orderNo: routeQuery.logOrderNo ? String(routeQuery.logOrderNo) : undefined,
-  type: routeQuery.logType ? String(routeQuery.logType) : undefined
+  skuId: undefined,
+  orderNo: undefined,
+  type: undefined
 })
-activeTab.value = routeQuery.tab === 'logs' ? 'logs' : 'overview'
+
+/**
+ * 回填 URL query（stock 页 query 键：tab/keyword/itemId/merchantId/lowStock/threshold/logSkuId/logOrderNo/logType）
+ * keep-alive 下再次从快捷入口跳到本页时也复用它，必须先整体重置再按 query 覆盖
+ */
+function initQueryFromRoute() {
+  const query = route.query || {}
+  queryParams.keyword = query.keyword ? String(query.keyword) : undefined
+  queryParams.itemId = queryNumber(query.itemId)
+  queryParams.merchantId = queryNumber(query.merchantId)
+  queryParams.lowStock = query.lowStock === 'true' || query.lowStock === '1'
+  const threshold = queryNumber(query.threshold)
+  queryParams.threshold = threshold === undefined ? 10 : threshold
+  logParams.skuId = queryNumber(query.logSkuId)
+  logParams.orderNo = query.logOrderNo ? String(query.logOrderNo) : undefined
+  logParams.type = query.logType ? String(query.logType) : undefined
+  activeTab.value = query.tab === 'logs' ? 'logs' : 'overview'
+  logsLoaded.value = false
+}
 
 const overviewTotal = computed(() => overviewList.value.length)
 const logsTotal = computed(() => logsList.value.length)
@@ -458,8 +476,8 @@ function overviewRowClassName({ row }) {
   return ''
 }
 
-/** 筛选/tab 同步到 URL（接口无分页，URL 只同步筛选键与 tab） */
-function syncUrl() {
+/** 当前筛选 / tab 对应的 URL query（接口无分页，只同步筛选键与 tab） */
+function currentQuery() {
   const query = { tab: activeTab.value }
   if (queryParams.keyword) query.keyword = queryParams.keyword
   if (queryParams.itemId !== undefined && queryParams.itemId !== null) query.itemId = String(queryParams.itemId)
@@ -471,7 +489,19 @@ function syncUrl() {
   if (logParams.skuId !== undefined && logParams.skuId !== null) query.logSkuId = String(logParams.skuId)
   if (logParams.orderNo) query.logOrderNo = logParams.orderNo
   if (logParams.type) query.logType = logParams.type
-  router.replace({ path: route.path, query }).catch(() => {})
+  return query
+}
+
+/** 是否与当前筛选一致（String 归一化比较，避免自身写 URL 触发 watch 死循环） */
+function isSameQuery(query, target) {
+  const keys = Object.keys(query || {})
+  if (keys.length !== Object.keys(target || {}).length) return false
+  return keys.every(key => String(query[key]) === String(target[key]))
+}
+
+/** 筛选 / tab 同步到 URL（刷新保持） */
+function syncUrl() {
+  router.replace({ path: pagePath, query: currentQuery() }).catch(() => {})
 }
 
 /** 库存总览（A18，无分页 List<Map>） */
@@ -531,6 +561,7 @@ function resetLogsQuery() {
   logParams.skuId = undefined
   logParams.orderNo = undefined
   logParams.type = undefined
+  syncUrl()
   getLogs()
 }
 
@@ -556,9 +587,23 @@ function handleViewLogs(row) {
   getLogs()
 }
 
-/** 调整完成（含 PET-3001 并发变化 emit null）：刷新总览；流水已加载则按当前条件同步重拉 */
-function handleAdjusted() {
-  getOverview()
+/**
+ * 调整完成（成功 / PET-3001 库存不足 emit null）：
+ * 重拉总览后按 skuId 把最新行回填给弹窗（弹窗保持打开时「当前库存 / 差异预览」与后端一致）；
+ * 找不到该行时提示并关闭弹窗，避免继续展示过期库存；流水已加载则按当前条件同步重拉。
+ */
+async function handleAdjusted() {
+  const skuId = currentSku.value?.skuId
+  await getOverview()
+  if (skuId !== undefined && skuId !== null) {
+    const latest = overviewList.value.find(row => Number(row.skuId) === Number(skuId))
+    if (latest) {
+      currentSku.value = latest
+    } else if (adjustOpen.value) {
+      adjustOpen.value = false
+      proxy.$modal.msgWarning('未找到该 SKU 的最新库存数据，请刷新后重试')
+    }
+  }
   if (logsLoaded.value) {
     getLogs()
   }
@@ -587,6 +632,24 @@ function formatOperator(operator) {
   return String(operator)
 }
 
+// 同页 query 变化（如工作台「低库存」快捷入口再次跳 /mall/stock?lowStock=true）时重新回填并重查；
+// keep-alive 下组件已存在、onMounted 不再触发，必须监听 route.fullPath，且用 isSameQuery 防止自身 syncUrl 死循环
+watch(
+  () => route.fullPath,
+  () => {
+    if (route.path !== pagePath) return
+    if (isSameQuery(route.query, currentQuery())) return
+    initQueryFromRoute()
+    if (activeTab.value === 'logs') {
+      getLogs()
+    } else {
+      getOverview()
+    }
+  }
+)
+
+// 先回填 URL query 再取数（初始化只执行一次）
+initQueryFromRoute()
 getOverview()
 if (activeTab.value === 'logs') {
   getLogs()

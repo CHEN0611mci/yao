@@ -166,6 +166,7 @@
             :data="parentOptions"
             :props="{ value: 'id', label: 'name', children: 'children' }"
             node-key="id"
+            check-strictly
             :render-after-expand="false"
             :default-expand-all="true"
             clearable

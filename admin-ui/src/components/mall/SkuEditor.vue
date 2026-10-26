@@ -53,6 +53,18 @@
           />
         </template>
       </el-table-column>
+      <el-table-column label="图片" width="110" align="center">
+        <template #default="{ row, $index }">
+          <mall-image-upload
+            class="sku-image-upload"
+            :model-value="row.image"
+            :limit="1"
+            :is-show-tip="false"
+            :disabled="disabled"
+            @update:model-value="val => updateField($index, 'image', val)"
+          />
+        </template>
+      </el-table-column>
       <el-table-column label="状态" width="100" align="center">
         <template #default="scope">
           <el-switch
@@ -106,8 +118,10 @@
  * - 完全受控：不持有业务状态，所有编辑通过 update:modelValue 回传新数组
  * - 本地校验：至少 1 行、规格名必填、价格 ≥ 0.01、库存 ≥ 0 整数、同表单 specName/skuCode 去重
  * - 父组件通过 ref.validate() 在提交前调用；PET-1002（skuCode 全平台重复）用 markDuplicateCode()
- * - status 0/1 由本组件编辑，行内可停用
+ * - status 0/1 由本组件编辑，行内可停用；SKU 图片用 MallImageUpload（§5.3.6 image 允许单图）
  */
+import MallImageUpload from '@/components/mall/MallImageUpload.vue'
+
 const props = defineProps({
   modelValue: {
     type: Array,
@@ -272,5 +286,21 @@ defineExpose({ validate, markDuplicateCode })
 
 :deep(.sku-code-error .el-input__wrapper) {
   box-shadow: 0 0 0 1px var(--el-color-danger) inset;
+}
+
+/* 行内 SKU 图片：压缩 picture-card 尺寸以适配窄列 */
+.sku-image-upload :deep(.el-upload--picture-card),
+.sku-image-upload :deep(.el-upload-list--picture-card .el-upload-list__item) {
+  width: 60px;
+  height: 60px;
+  line-height: 60px;
+}
+
+.sku-image-upload :deep(.el-upload-list--picture-card .el-upload-list__item-thumbnail) {
+  object-fit: cover;
+}
+
+.sku-image-upload :deep(.el-upload__tip) {
+  display: none;
 }
 </style>
