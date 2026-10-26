@@ -3,6 +3,7 @@
 > 项目：萌宠优选 · 宠物商城系统　｜　记录要求：每人每天 2–3 条，当天记录，不后补
 > 字段：编号 / 日期 / 阶段 / 工具与模型 / Prompt 原文 / 生成摘要 / 是否采纳 / 修改理由 / 人工修改点 / 测试验证结果与证据
 > 说明：本文件先记录 P1 阶段"数据库表结构设计与执行"的 2 条真实记录；后续按里程碑追加。
+> 补录：AI-010/AI-011 对应 2026-10-19 完成并通过运行验收的 `ruoyi-mall` 后端实现（管理端 / 商家端 / 用户端接口），开发当时未单独记录，于 2026-10-26 按合入源码与验收证据补录；日期字段保留真实开发日期，编号按日志追加顺序编排。
 
 ---
 
@@ -165,6 +166,42 @@
 | 人工修改点 | 解决 `.gitignore`/`README.md` add/add 冲突（取平铺版后按双远端改写 Git 说明与目录名）；`git rm -r 萌宠优选_后端交接包`；删除根 `docs/` 两份重复副本；新增三个 `.env` 文件；用脚本精确抽取 `<style>` 到 `public/loading.css` 并替换为 `<link>`；`.env.production` 压缩改 `none`；登记 `verify/integration-20261026.txt` 与 `verify/README.md` |
 | 测试验证结果 | 后端一致性：`git diff --stat backup/pre-integrate:萌宠优选_后端交接包/backend HEAD:backend` 无输出（逐字节一致）；前端增量：`admin-ui` 32 files / +8660 / -0；`npm install` 527 包 32s；`node scripts/mall-check.mjs` 10 页面 / 20 SFC 全部通过；`npm.cmd run build:prod` vite 6.4.1、2587 modules、`✓ built in 13.08s`、EXIT=0，`dist/` 含 `index.html`/`loading.css`/`static`（无异常 `.gz` 路径）；未执行：后端 `mvn package`（本机 `java`/`mvn` 不在 PATH）、运行期联调（需 JDK17 + MySQL + Redis）、`db/04_fix_menu_route_name.sql` |
 | 证据路径 | `verify/integration-20261026.txt`、`verify/README.md`、`README.md`、`admin-ui/.env.example`、`admin-ui/public/loading.css` |
+
+---
+
+## AI-010 补录：实现商城后端 `ruoyi-mall` 模块（14 表领域模型 / 73 个接口 / 三端鉴权）
+
+| 字段 | 内容 |
+|---|---|
+| 编号 | AI-010（补录条目） |
+| 日期 | 2026-10-19（补录登记 2026-10-26；编号按日志追加顺序编排） |
+| 阶段 | P3 后端开发（管理端 + 商家端 + 用户端接口） |
+| 工具与模型 | AI 编码助手 + 人工审阅（协作者开发期间的原始工具/模型记录未随仓库提交，本条按合入源码、《后端开发交接说明 v1.0》与 2026-10-19 验收证据回溯整理） |
+| Prompt 原文 | 任务目标（引自《后端开发交接说明 v1.0》§1 原文）："在已有 RuoYi 3.9.2 基座与 `shop` 数据库（14 张业务表、种子数据齐全）之上，**新增 `ruoyi-mall` 业务模块**，实现会员、宠物档案、商品、购物车、订单、支付沙箱、履约、RBAC 与测试，做到'登录 → 浏览 → 加购 → 下单 → 支付 → 发货 → 收货'主闭环可演示"；交付范围 M2–M10 见同文档 §3，工程/分层/鉴权约定见 §7、§8。原始对话未留存，以上为当时任务书条款。 |
+| 生成摘要 | ①工程：`backend/ruoyi-mall` 共 **120 个 Java 文件 / 8480 行**（controller 22/1446、service 14/2658、domain 14/2122、dto 34/642、mapper 14/417、common 18/1021、config 1、state 2、event 1），`resources/mapper/mall/*.xml` 14 个；根 `pom.xml` 增加 `<module>ruoyi-mall</module>`，`ruoyi-admin/pom.xml` 增加依赖，`@MapperScan("com.ruoyi.**.mapper")` 与 `typeAliasesPackage` 直接覆盖新包，不改基座；②接口：**73 个 HTTP 映射**（GET 32 / POST 19 / PUT 18 / DELETE 4），按端与前端契约逐条对齐——管理端 `Admin*` 8 个控制器 23 个映射 + `POST /api/upload/image` = **A1–A24 共 24 项**；商家端 `Merchant{Item,Order,Stock}` 3 个控制器 **11 个映射 = M1–M11**；用户端 10 个控制器 37 个映射 + `POST /api/member/upload/image` = **U01–U38 共 38 项**（24+11+38=73）；③领域：14 个 domain 对应 `pet_*` 14 张表（收货/宠物/商品存快照，无物理外键），34 个 DTO 全为 `record` 且 27 处 `@Valid` 入参校验；④统一契约：`Result<T>`、`PageResult<T>`、`ErrorCode`（26 个 `PET-xxxx` 码，含 HTTP 状态与默认文案）、`BizException/AuthException/ForbiddenException/RateLimitException/DuplicateRequestException`、`MallExceptionHandler`（统一 `{code,msg,data,traceId}`）、`TraceIdFilter`（每请求生成 traceId 贯穿日志与响应）；⑤双域鉴权：后台沿用若依 JWT + `@PreAuthorize`（**34 处**，24 个 `mall:*` 权限码与 `db/03_seed.sql` 一致），会员侧 `@MemberLogin` + `MemberAuthInterceptor` + `MemberContext`(ThreadLocal) + `MemberTokenService`（Redis `member_tokens:` 前缀、UUID Token、剩余不足 1 天自动续期 7 天）+ `MallWebConfig` 注册拦截器与白名单，与后台 `login_tokens:` 完全隔离；⑥治理：`MallRateLimiter`（Redis 固定窗口，TTL 回填 `Retry-After`）、`MallConfigService`（读 `sys_config` 的 8 个 `mall.*` 键，全部带安全默认值）、**17 处 `@Log`** 写 `sys_oper_log` 审计、`MemberMessageEvent` 消息通知；⑦上传：`UploadController` 双入口（后台/会员）复用若依 `FileUploadUtils`，返回 `{url,fileName,newFileName,originalFilename}` 相对路径 |
+| 是否采纳 | 采纳（已合入 `backend/`，已构建并完成运行验收） |
+| 修改理由 | ①设计文档 §7.2 的 `service/impl/` 与 `job/` 分包未采用：Service 直接实现类、Controller 留在 `ruoyi-mall` 模块内（交接说明 §7.2 已注明实际位置），减少无意义抽象；②商城接口不复用若依 `AjaxResult`，独立 `Result` 以承载 `PET-xxxx` 业务码与 `traceId`，前端可区分"网络失败/业务失败/未登录"三形态；③会员 Token 不复用若依 JWT，避免后台与会员 Token 互用（冒烟第 21 项专测该隔离）；④金额全链路 `BigDecimal` + `DECIMAL(10,2)`，禁用 double/float；⑤限流不做"拦截器全局限流"，改为按场景显式调用（登录 10 次/60 秒、下单、回调），避免误伤浏览类只读接口；⑥上传按端拆两个路径而非共用一个，便于分别绑定后台 JWT 与会员 Token |
+| 人工修改点 | 逐表核对 14 个 domain 与 `db/02_pet_mall.sql` 字段/类型/注释；核对 24 个权限码与 `sys_menu` 种子一致；确认 Controller 不写 SQL、`@Transactional(rollbackFor = Exception.class)` 只落在 Service 公有方法（35 处）；统一错误码与设计文档 §7.3 对照；补齐 DTO 的 `@Valid` 约束；接口按"只增不改"冻结为 v1 |
+| 测试验证结果 | ①构建运行：`mvn -pl ruoyi-admin -am -DskipTests package` 成功，产物 `dist/ruoyi-admin.jar` 可启动（交接说明 §0/§4 记录）；②数据库侧：`db/verify.sql` A/B/C 共 35 项 PASS；③接口侧：`setup/smoke-test.ps1`（只读）**PASS=30 FAIL=0 SKIP=0**——公开接口 4、会员域 8（含未登录 HTTP 401 + `biz=2001`）、管理员域 8、后台/会员 Token 隔离 1（会员 Token 调后台接口 → `biz=401`）、商家域 4（含越权 `biz=403`）、审核员域 5（含越权 `biz=403`），证据 `verify/evidence-20261019.txt`；④**未做（如实登记）**：`ruoyi-mall/src/test` 不存在、无 JaCoCo，交接说明 M10 要求的"核心 Service 单测 + 并发/幂等/超时测试"未交付，测试报告缺位 |
+| 证据路径 | `backend/ruoyi-mall/**`、`backend/pom.xml`、`backend/ruoyi-admin/pom.xml`、`verify/evidence-20261019.txt`、`verify/backend-20261019.txt`、`setup/smoke-test.ps1`、`docs/02-设计文档/后端开发交接说明_v1.0.md` |
+
+---
+
+## AI-011 补录：交易链路一致性机制（原子扣减 / 支付幂等 / 状态机 / 超时关单）
+
+| 字段 | 内容 |
+|---|---|
+| 编号 | AI-011（补录条目） |
+| 日期 | 2026-10-19（补录登记 2026-10-26；编号按日志追加顺序编排） |
+| 阶段 | P3 后端开发（核心交易链路） |
+| 工具与模型 | AI 编码助手 + 人工审阅（同 AI-010，按源码回溯补录） |
+| Prompt 原文 | 引自交接说明 §6.3/§9 的开发约定原文："扣减 SQL `UPDATE pet_item_sku SET stock=stock-#{qty} WHERE id=#{skuId} AND stock>=#{qty}`，影响 0 行 → `PET-3001` 并整单回滚"；"支付回调 `Idempotency-Key` 必须落 `pet_payment.idempotency_key`，重复命中唯一键直接返回成功且不改订单"；"超时关单…条件更新 `WHERE status=0`，再回滚库存"；"先按 `sku_id` 升序扣减，降低死锁概率；状态更新一律条件更新" |
+| 生成摘要 | ①`StockService`：`deduct/rollback/adjust` 三入口 + `writeLog`；扣减前查 `pet_stock_log.uk_sku_order_type` 流水判重（重跑不重复扣），`deductStock` 影响 0 行即抛 `PET-3001` 由事务整单回滚；`PetItemSkuMapper.deductStock` 为 `WHERE id=? AND status=1 AND stock >= #{quantity}` 原子条件更新（禁止先查后改），并叠加 DDL `CHECK(stock>=0)` 兜底；②`PriceCalculator`：`Σ(price×qty)` → 免邮阈值（`mall.freight-free-threshold`）→ 运费（`mall.freight-fee`）→ 应付，全程 `BigDecimal` + `HALF_UP` 两位小数，一期 `discountAmount` 恒 0；③`CheckoutService`：试算与下单共用计价，下单校验同店（不同 `merchant_id` → `PET-1001`）、按 `skuId` 升序扣减、写订单与明细快照、清购物车、`incrementSales`；订单号 `PM + yyyyMMddHHmmss + 6 位随机`；④`OrderStateMachine`：9 状态（0 待付款…8 已退款）迁移矩阵 + `assertTransition`（非法迁移 → `PET-3002`）+ `assertCurrent`；⑤`PaymentService`：沙箱三分支（`mockPay`）与回调（`callback`）共用 `settle`；回调用 `mall.pay-callback-token` 校验令牌后比对金额（不一致 → `PET-4002`），幂等键**先查后插**、命中即返回 `duplicated=true` 且不改订单，成功用 `updateToPaid` 条件更新（并发时回读最新状态，避免状态回退）；⑥`OrderService`：取消回滚库存并写 `ORDER_ROLLBACK` 流水、商家/平台发货（状态断言 + 物流信息追加进 `receiverSnapshot`）、确认收货、`closeTimeoutOrders`（单批 100 单，逐条条件关单后回滚库存并发消息）、`autoConfirmOrders`（按 `mall.auto-confirm-days`）；⑦`AdminJobController`：A22/A23 手动补偿入口（`mall:job:trigger`）；⑧`PetItemMapper.updateAudit`：审核驳回时 `status` 强制置 0 |
+| 是否采纳 | 采纳（核心链路按设计落地）；3 项降级/未采纳见"修改理由" |
+| 修改理由 | ①**超时关单与自动确认未接 Quartz**：`ruoyi-mall` 下无 Job 类、`sys_job` 无商城记录，仅保留 A22/A23 手动接口 → 演示与文档不得声称"定时自动"（管理端前端设计 §9.5、用户端设计 D-31 均已登记）；②`updateAudit` 未带 `AND audit_status=0`：两个管理员并发审核可能相互覆盖 → 前端只对 `auditStatus=0` 显示审核按钮并在成功后强制刷新，后端补条件更新列为待修复项；③扣减条件含 `status=1`：SKU 下架后扣减同样返回 `PET-3001`（语义上属"不可售"），前端按库存不足提示，为已知口径；④一期无优惠券/折扣，`discountAmount` 固定 0，促销与价保留二期 |
+| 人工修改点 | 复核扣减 SQL 原子条件与流水唯一键（`uk_sku_order_type`）双保险；批量扫描上限固定 100；关单与取消复用同一 `rollbackStock`，保证流水 `Σchange_qty = stock`；状态推进一律条件更新 + 回读校验；金额比较用 `compareTo` 而非 `equals`；`@Transactional(rollbackFor = Exception.class)` 覆盖取消/关单/支付全链 |
+| 测试验证结果 | ①冒烟覆盖：会员侧购物车与订单列表、管理员侧订单与库存查询、商家侧商品与订单、支付记录查询均 HTTP 200 + `biz=200`；②证据：`verify/evidence-20261019.txt` **PASS=30/FAIL=0**；③**未做（如实登记）**：`StockConcurrentTest`（20 线程抢库存 1）、回调重放 3 次、状态机全矩阵单测、超时关单实跑（需时间回拨或 `mall.pay-timeout-minutes=1`）均未落地——`backend/ruoyi-mall/src/test` 为空，上述验收口径目前只有代码级保证与静态对照，无自动化执行记录；已列入下一步"测试三件套（防超卖/支付幂等/状态机）+ JaCoCo"任务 |
+| 证据路径 | `backend/ruoyi-mall/src/main/java/com/ruoyi/mall/service/{StockService,CheckoutService,OrderService,PaymentService,PriceCalculator}.java`、`.../state/OrderStateMachine.java`、`.../resources/mapper/mall/{PetItemSkuMapper,PetItemMapper}.xml`、`.../controller/AdminJobController.java`、`verify/evidence-20261019.txt`、`verify/backend-20261019.txt` |
 
 ---
 
