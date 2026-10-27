@@ -1,0 +1,112 @@
+[
+  {
+    "kind": "source",
+    "route": "/",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/login",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/items",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/items/1",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/orders/missing",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/api/health",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/api/items?pageNum=1&pageSize=1",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/assets/index-DoTpYwGX.js",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/assets/vue-Ci0szF6_.js",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/assets/index-BDJ7rckw.css",
+    "status": 200
+  },
+  {
+    "kind": "source",
+    "route": "/assets/missing.js",
+    "status": 404
+  },
+  {
+    "kind": "release",
+    "route": "/",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/login",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/items",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/items/1",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/orders/missing",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/api/health",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/api/items?pageNum=1&pageSize=1",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/assets/index-BXglscu9.js",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/assets/vue-Ci0szF6_.js",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/assets/index-BDJ7rckw.css",
+    "status": 200
+  },
+  {
+    "kind": "release",
+    "route": "/assets/missing.js",
+    "status": 404
+  }
+]

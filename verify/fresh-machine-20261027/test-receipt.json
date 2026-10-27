@@ -1,0 +1,72 @@
+{
+  "baseline": "406cdf5",
+  "mode": "local fresh-machine simulation, not an actual remote host or VM",
+  "trackedFilesChecked": 1049,
+  "filesWithOnlyLineEndingDifferences": 915,
+  "trackedContentDifferences": [],
+  "sourceSmoke": {
+    "pass": 30,
+    "fail": 0,
+    "skip": 0
+  },
+  "releaseSmoke": {
+    "pass": 30,
+    "fail": 0,
+    "skip": 0
+  },
+  "databaseRuntimeChecks": {
+    "pass": 10,
+    "fail": 0
+  },
+  "httpChecks": {
+    "pass": 22,
+    "fail": 0
+  },
+  "freshDatabaseTables": 48,
+  "sourceBrowserLogin": "member1 signed in; source-login.jpg",
+  "sourceAdminBrowser": "login page rendered",
+  "releaseBrowser": "home page rendered with seed catalog",
+  "releaseNodeModulesPresent": false,
+  "notes": [
+    "Application inputs came from git archive HEAD and the ZIP tracked by that commit.",
+    "Installed runtime executables are host prerequisites; this is process/data/config isolation.",
+    "Fresh caches, configs, credentials, MySQL data, Redis and ports isolate tests from the original project.",
+    "Java tests were skipped during backend compilation.",
+    "Loopback binding still prevents direct cross-device access."
+  ],
+  "cleanup": {
+    "testServicesStopped": true,
+    "testDataPreserved": true,
+    "originalProjectHealthy": true
+  },
+  "date": "2026-10-27",
+  "fileUploadsPerformedDuringTest": false,
+  "buildValidation": {
+    "dependenciesInstalledFromLockfilesWithFreshCache": true,
+    "userUnitTests": {
+      "pass": 5,
+      "fail": 0
+    },
+    "userStaticCheck": {
+      "pages": 19,
+      "vueFiles": 59,
+      "result": "PASS"
+    },
+    "adminStaticCheck": {
+      "pages": 10,
+      "sfcFiles": 20,
+      "result": "PASS"
+    },
+    "userProductionBuild": "PASS",
+    "adminProductionBuild": "PASS after generating the documented production env",
+    "backendBuild": "PASS with fresh Maven cache and empty user/global Maven settings",
+    "javaUnitTestsExecuted": false
+  },
+  "evidence": {
+    "sourceSmoke": "source-smoke.txt",
+    "releaseSmoke": "release-smoke.txt",
+    "database": "runtime-db.txt",
+    "http": "http-results.json",
+    "browserScreenshot": "source-login.jpg"
+  }
+}
