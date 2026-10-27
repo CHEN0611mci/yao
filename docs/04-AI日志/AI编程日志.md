@@ -259,6 +259,24 @@
 
 ---
 
+## AI-015 修复用户端「专区导航下划线不跟随」（user-ui 回归）
+
+| 字段 | 内容 |
+|---|---|
+| 编号 | AI-015 |
+| 日期 | 2026-10-27 |
+| 阶段 | P5 联调与验收（用户端导航高亮回归修复） |
+| 工具与模型 | Cline（AI 编码助手）+ 人工复核 |
+| Prompt 原文 | "点击猫猫专区和狗狗专区的时候下划光标不在对应位置上，现在帮我修改一下并再次打开给我检查" |
+| 生成摘要 | `user-ui/src/components/AppHeader.vue` 的导航「全部好物 / 猫咪专区 / 狗狗专区 / 小宠生活」共用 `/items` **一条路由记录**，物种只体现在 `?species=` query 上；原实现只给「全部好物」加了 `active-class="active"`，而 vue-router 的 `active-class` 按**路由记录**匹配、不看 query，于是任意专区页都会让「全部好物」保持 `.active`，下划线（`styles/main.css` 的 `.category-bar a.active:after`）永远停在「全部好物」，另三项从未高亮。改为 `useRoute()` + `computed` 计算 `activeSection`（仅 `route.path === '/items'` 生效，把 `route.query.species` 归一化为 `CAT/DOG/SMALL/ALL`），四个 `router-link` 改用 `:class="{ active: activeSection === '...' }"` 并删除 `active-class`。 |
+| 是否采纳 | 采纳（1 个组件文件，+19 / −4；未改后端、未改数据、未改样式） |
+| 修改理由 | ①根因是**路由匹配语义误用**而非 CSS：`/items?species=X` 与 `/items` 属同一路由记录，`active-class` 无法区分 query 变体，必须由业务侧按 query 判定；②顺带修掉 `/items/:id` 详情页误高亮「全部好物」的副作用；③与主线项目同源修复（对应主线 `docs/04-AI日志` 的 AI-017）逐字一致，便于两条演进线后续合并。 |
+| 人工修改点 | `user-ui/src/components/AppHeader.vue`：新增 `import { computed } from 'vue'`、`import { useRoute } from 'vue-router'`、`const route = useRoute()`、`SECTION_KEYS`、`activeSection`；模板 `.category-bar` 四个链接由 `active-class` 改为 `:class` 绑定（「首页」保留 `exact-active-class`）。**未**改动 `styles/main.css`（下划线样式本身正确）。 |
+| 测试验证结果 | ①`npm run build` → `✓ 1658 modules transformed`、`built in 3.02s`、退出码 0；入口 chunk 更新为 `index-CGwHGcZD.js`，CSS 仍为 `index-BDJ7rckw.css`（样式未改）；产物内 `active:a.value==="ALL"/"CAT"/"DOG"/"SMALL"` 共 4 处，旧 `activeClass:"active"` 0 处。②重启 82 静态预览服务（`setup/serve-user-ui.mjs`，PID 48576），`GET /` = 200、`GET /api/health` = 200（后端 8083 未重启）。③**无头 Edge 渲染 DOM 断言**：`/items` → `active` 在「全部好物」；`/items?species=CAT` → 在「猫咪专区」；`/items?species=DOG` → 在「狗狗专区」；`/items/4`（详情页）→ 四项均无 `active`；`.member-nav` 以外的 `router-link-active` 无样式，不影响 `.category-bar`。 |
+| 证据路径 | `user-ui/src/components/AppHeader.vue`、`user-ui/src/styles/main.css`、提交 `21bce66` |
+
+---
+
 ## 记录模板（后续追加）
 
 | 字段 | 内容 |
