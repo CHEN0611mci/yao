@@ -119,7 +119,29 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup\start-backend.ps1 -S
 [ OK ] 后端已就绪：http://127.0.0.1:8080
 ```
 
-### 6.2 验收
+### 6.2 前端：用户端 + 管理端
+
+```powershell
+# 一次启动两端（首次自动 npm ci、生成 admin-ui\.env.production、构建 dist）
+.\start-all.bat
+
+# 或只启动一端
+.\start-mall.bat                 # 用户端 81（含后端）
+.\start-admin-runtime.bat        # 管理端 80（后端未启动时加 -StartBackend）
+
+# 只构建，不启动
+powershell -NoProfile -ExecutionPolicy Bypass -File .\setup\build-ui.ps1 -Target Both
+```
+
+| 入口 | 地址 | 说明 |
+|---|---|---|
+| 用户端 | http://127.0.0.1:81/ | `member1/member123` |
+| 管理端 | http://127.0.0.1:80/ | `admin/admin123`，登录需手工输入图形验证码 |
+| 管理端反代自检 | http://127.0.0.1:80/prod-api/api/health | 返回 `code=200` 说明 `/prod-api` 已去前缀转发到后端 |
+
+管理端构建配置由脚本维护：`admin-ui\.env.production` 内 `VITE_APP_BASE_API='/prod-api'`、`VITE_APP_ENV='production'`。该文件与 `dist`、`node_modules` 均不入库（`.gitignore` 已排除），换机后由 `build-ui.ps1` 重新生成。
+
+### 6.3 验收
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup\smoke-test.ps1
@@ -133,7 +155,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\setup\smoke-test.ps1
 - <http://127.0.0.1:8080/captchaImage>
 - `admin/admin123`、`merchant1/merchant123`、`reviewer/reviewer123`、`member1/member123`
 
-### 6.3 停止
+### 6.4 停止
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\setup\stop-backend.ps1

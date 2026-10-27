@@ -277,6 +277,24 @@
 
 ---
 
+## AI-018 · 仓库整合：下载即可完整运行两端
+
+| 字段 | 内容 |
+|---|---|
+| 编号 | AI-018 |
+| 日期 | 2026-10-27 |
+| 阶段 | P7 交付整合（v2.4.0） |
+| 工具与模型 | Cline（AI 编码助手）+ 人工复核 |
+| Prompt 原文 | "现在的版本差不多了，现在我要你整合并完善仓库中的文件夹，要求：当别人从仓库中下载全部文件后他能完整运行所有内容和功能（管理端和用户端），并在这基础上对比整合所有文件，尽量降低文件冗余" |
+| 生成摘要 | 新增 `setup/build-ui.ps1`（依赖安装 + `.env.*` 生成 + 增量构建）、`setup/start-admin.ps1`（后端检查 → 构建 → 80 静态服务 → 反代校验）、`setup/start-all.ps1` 与 `start-all.bat`（两端一键启动）；`start-admin-runtime.bat` 改为调用新脚本；`setup/start-mall.ps1` 增加 `-WithAdmin`/`-AdminPort`；`setup/serve-user-ui.mjs` 区分 Admin/User 日志与构建提示；`.gitignore` 增加 `/run/`、`/verify/smoke-result.txt`；删除 `admin-ui/bin/*`（3 个若依示例批处理）与 `backend/sql/*`（已完整合并进 `db/01_base.sql`）；重写 README，更新 RUNBOOK/VERSION，新增 `scripts/README.md`、`docs/整合说明-v2.4.0.md` |
+| 是否采纳 | 采纳 |
+| 修改理由 | 原仓库 `admin-ui` 没有任何构建入口、`.env.production` 需手工复制，下载后管理端实际无法登录；两端需分步启动且依赖后端顺序。整合目标是"首次自动引导 + 重复执行幂等"，并删除经 `git grep` 确认无引用的重复文件，而不是删除验收证据与装机工具 |
+| 人工修改点 | ①PowerShell 5.1 下 `$ErrorActionPreference='Stop'` 会把 vite 写入 stderr 的进度当成终止性错误（构建停在 `transforming...`），npm 调用处临时改为 `Continue` 并显式检查 `$LASTEXITCODE`；②编辑器写入的 `.ps1` 必须补 UTF-8 BOM，否则 PS5.1 按 GBK 解析中文导致语法错误；③增量判定只比较 `.env.production`，避免生成 `.env.development` 时误触发重建；④删除文件前逐一确认引用（`admin-ui/README.md`、`package.json`、脚本均无引用） |
+| 测试验证结果 | ①`Parser::ParseFile` 检查 4 个 ps1 均 0 error，`node --check serve-user-ui.mjs` 通过。②`setup\build-ui.ps1 -Target Admin` 完整构建：2587 modules、`✓ built in 11.61s`、产物 5.18 MB、exit 0。③`setup\start-admin.ps1 -BackendPort 8083`：首页 200（`<title>萌宠优选 · 宠物商城系统</title>`）、入口 chunk 为本次构建的 `index-BPUzbG5m.js`、`/prod-api/api/health` → `code=200`、`database=UP`、`redis=UP`、`/prod-api/captchaImage` 200。④再次执行命中 `run\admin-ui.pid` 复用、`dist` 已最新则跳过构建。⑤`setup\start-all.ps1 -AdminOnly -AdminPort 80` 参数透传与进程复用正常。⑥README/RUNBOOK/整合说明/scripts README 相对链接检查全部有效。⑦`git check-ignore` 确认 `verify/smoke-result.txt` 已忽略 |
+| 证据路径 | `setup/build-ui.ps1`、`setup/start-admin.ps1`、`setup/start-all.ps1`、`start-all.bat`、`docs/整合说明-v2.4.0.md`、`logs/admin-ui.log` |
+
+---
+
 ## 记录模板（后续追加）
 
 | 字段 | 内容 |

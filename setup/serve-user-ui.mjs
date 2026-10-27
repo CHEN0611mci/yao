@@ -4,6 +4,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 const adminMode = process.env.MALL_UI_MODE === 'admin'
+const uiLabel = adminMode ? 'Admin UI' : 'User UI'
+const buildHint = adminMode ? 'Build admin-ui first: cd admin-ui && npm run build:prod' : 'Build user-ui first: cd user-ui && npm run build'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), adminMode ? '../admin-ui/dist' : '../user-ui/dist')
 const port = Number(process.env.USER_UI_PORT || 81)
 const backend = new URL(process.env.USER_UI_API_TARGET || 'http://127.0.0.1:8080')
@@ -23,7 +25,7 @@ export const server = http.createServer((request, response) => {
     upstream.on('error', () => {
       if (response.headersSent) { response.destroy(); return }
       response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' })
-      response.end(JSON.stringify({ code: 503, errorCode: 'PET-SERVICE-OFFLINE', message: '商城后端未就绪，请运行 start-mall.bat，并检查 MySQL、Redis 与后端日志' }))
+      response.end(JSON.stringify({ code: 503, errorCode: 'PET-SERVICE-OFFLINE', message: `${uiLabel === 'Admin UI' ? '管理端' : '商城'}后端未就绪，请运行 start-mall.bat，并检查 MySQL、Redis 与后端日志` }))
     })
     request.on('aborted', () => upstream.destroy()); request.pipe(upstream); return
   }
@@ -35,11 +37,11 @@ export const server = http.createServer((request, response) => {
     if (path.extname(pathname)) { response.writeHead(404).end(); return }
     file = path.join(root, 'index.html')
   }
-  if (!fs.existsSync(file)) { response.writeHead(503).end('Build user-ui first: npm run build'); return }
+  if (!fs.existsSync(file)) { response.writeHead(503).end(buildHint); return }
   const type = mime[path.extname(file)] || 'application/octet-stream'
   response.writeHead(200, { 'Content-Type': type, 'X-Content-Type-Options': 'nosniff',
     'Cache-Control': file.endsWith('index.html') ? 'no-cache' : 'public, max-age=3600' })
   if (request.method === 'HEAD') response.end()
   else fs.createReadStream(file).on('error', () => response.destroy()).pipe(response)
 })
-server.listen(port, '127.0.0.1', () => console.log(`User UI: http://127.0.0.1:${port}/ -> ${backend.origin}`))
+server.listen(port, '127.0.0.1', () => console.log(`${uiLabel}: http://127.0.0.1:${port}/ -> ${backend.origin}`))

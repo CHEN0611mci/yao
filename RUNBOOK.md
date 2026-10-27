@@ -1,10 +1,14 @@
 # 萌宠优选 · 后端运行与验收手册（RUNBOOK）
 
-## 2026-10-27 修复版启动
+## 2026-10-27 整合版启动（v2.4.0）
 
-日常双击 `start-mall.bat`（`start-user-ui.bat` 同入口），访问 http://127.0.0.1:81/ 。入口启动已安装的本机 MySQL/Redis 服务或 PetMall 计划任务，等待 `/api/health` 数据库与缓存检查通过，再启动用户端。后端源码变化会自动构建，先安全停止本项目 JAR 进程以避免 Windows 锁文件。运行包已有构建，无须安装前端依赖。
+**一次启动两端**：双击 `start-all.bat`。脚本依次检查 MySQL/Redis → 启动后端并等待 `/api/health` → 构建并托管用户端 http://127.0.0.1:81/ → 构建并托管管理端 http://127.0.0.1:80/ 。前端依赖缺失会自动 `npm ci`；管理端的 `.env.production`（`VITE_APP_BASE_API=/prod-api`）由 `setup\build-ui.ps1` 自动生成，**不再需要手工复制 `.env.example`**。首次执行需要联网下载 npm 包（没有 jar 时还要 Maven 依赖），耗时较长；之后重复执行会复用已在运行的进程，并跳过产物已最新的构建。
 
-管理端生产构建用 `start-admin-runtime.bat` 在 http://127.0.0.1:80/ 启动，先启动商城后端。管理端重新构建先复制 `.env.example` 为 `.env.production`，设置 `VITE_APP_ENV=production`、`VITE_APP_BASE_API=/prod-api`。本机配置均不提交。
+**只启动一端**：用户端 `start-mall.bat`；管理端 `start-admin-runtime.bat`，后端未启动时加 `-StartBackend`。换端口：`start-all.bat -UserPort 8181 -AdminPort 8180`，或 `start-admin-runtime.bat -AdminPort 8081`。
+
+**单独构建**：`powershell -ExecutionPolicy Bypass -File .\setup\build-ui.ps1 -Target Both|User|Admin`，加 `-Force` 会重装依赖并强制重建。
+
+脚本不覆盖数据：`init-db.bat` 只在首次执行；`start-*` 仅做增量迁移（如 `db\05_member_features.sql`）。日志见 `logs\console.log`、`logs\user-ui.log`、`logs\admin-ui.log`；进程记录见 `run\backend.port`、`run\user-ui.pid`、`run\admin-ui.pid`。
 
 换机先填写 `config/backend.env` 并安装运行环境。日常启动不要执行 `03_seed.sql`；v2.2.0 启动自动执行 `db/05_member_features.sql`，新增 3 张表，升级后共 48 张表（17 张业务表）。已有数据保留，不执行种子重置。查看 `logs/console.log`、`logs/user-ui.err.log`，或 http://127.0.0.1:8080/api/health 排错。本地 MySQL 8 认证参数已通过配置传递，无须手写 JDBC 环境变量。
 
@@ -269,6 +273,8 @@ curl.exe -X POST http://127.0.0.1:8080/api/member/login `
 |---|---|
 | `logs\console.log` | 启动/SQL/业务控制台日志 |
 | `logs\console.err.log` | JVM 标准错误 |
+| `logs\user-ui.log` / `logs\user-ui.err.log` | 用户端静态服务输出与错误 |
+| `logs\admin-ui.log` / `logs\admin-ui.err.log` | 管理端静态服务输出与错误 |
 | `logs\sys-info.log` | 若依 INFO 日志 |
 | `logs\sys-error.log` | 若依 ERROR 日志 |
 | `run\backend.pid` / `run\backend.port` | 当前后端进程与端口 |
@@ -331,6 +337,8 @@ curl.exe -X POST http://127.0.0.1:8080/api/member/login `
 - [ ] `init-db.bat` 完成，`shop` 45 张表；
 - [ ] `init-db.ps1 -Action Verify` 35 PASS；
 - [ ] `start-backend.bat` 显示“后端已就绪”；
+- [ ] `start-all.bat` 后用户端 http://127.0.0.1:81/ 与管理端 http://127.0.0.1:80/ 均可打开；
+- [ ] 管理端 `/prod-api/api/health` 返回 200（反代正常）；
 - [ ] `smoke-test.bat` 30 PASS；
 - [ ] 浏览器能打开 Swagger；
 - [ ] `admin/admin123` 能登录管理端；

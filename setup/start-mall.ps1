@@ -1,6 +1,6 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 [CmdletBinding()]
-param([switch]$NoBrowser, [int]$UserPort = 81)
+param([switch]$NoBrowser, [int]$UserPort = 81, [switch]$WithAdmin, [int]$AdminPort = 0)
 . (Join-Path $PSScriptRoot 'common.ps1')
 $ErrorActionPreference = 'Stop'
 $Root = Get-PetMallRoot
@@ -31,23 +31,11 @@ try {
     $ready = Invoke-RestMethod -Uri "http://127.0.0.1:$backendPort/api/health" -TimeoutSec 15
     if ($ready.code -ne 200) { throw 'Backend dependencies are not ready.' }
     $node = Get-Command node.exe -ErrorAction Stop
-    $ui = Join-Path $Root 'user-ui'
-    $built = Join-Path $ui 'dist\index.html'
-    $needsBuild = -not (Test-Path -LiteralPath $built)
-    if (-not $needsBuild -and (Test-Path -LiteralPath (Join-Path $ui 'src'))) {
-        $buildTime = (Get-Item -LiteralPath $built).LastWriteTimeUtc
-        $newer = Get-ChildItem -LiteralPath (Join-Path $ui 'src'), (Join-Path $ui 'public') -Recurse -File | Where-Object LastWriteTimeUtc -gt $buildTime | Select-Object -First 1
-        $needsBuild = [bool]$newer
-    }
-    if ($needsBuild) {
-        Push-Location $ui
-        try {
-            if (-not (Test-Path -LiteralPath 'node_modules')) { & npm.cmd ci; if ($LASTEXITCODE -ne 0) { throw 'npm ci failed' } }
-            & npm.cmd run build
-            if ($LASTEXITCODE -ne 0) { throw 'User UI build failed' }
-        } finally { Pop-Location }
-    }
+    Write-Step '用户端：构建检查（与 setup/build-ui.ps1 共用构建器）'
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'build-ui.ps1') -Target User
+    if ($LASTEXITCODE -ne 0) { throw 'User UI build failed. See setup/build-ui.ps1 output.' }
     if (-not (Test-TcpPort -Port $UserPort)) {
+        $env:MALL_UI_MODE = 'user'
         $env:USER_UI_PORT = [string]$UserPort
         $env:USER_UI_API_TARGET = "http://127.0.0.1:$backendPort"
         $serverFile = Join-Path $PSScriptRoot 'serve-user-ui.mjs'
@@ -62,6 +50,13 @@ try {
     if ($uiHealth.code -ne 200) { throw 'User UI proxy is not connected to the backend.' }
     Write-Ok "Mall ready: http://127.0.0.1:$UserPort/"
     if (-not $NoBrowser) { Start-Process "http://127.0.0.1:$UserPort/" }
+    if ($WithAdmin) {
+        Write-Step '管理端：构建并托管'
+        $adminArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot 'start-admin.ps1'), '-NoBrowser', '-StartBackend')
+        if ($AdminPort -gt 0) { $adminArgs += @('-AdminPort', "$AdminPort") }
+        & powershell.exe @adminArgs
+        if ($LASTEXITCODE -ne 0) { throw 'Admin UI startup failed.' }
+    }
 } catch {
     Write-Bad $_.Exception.Message
     exit 1

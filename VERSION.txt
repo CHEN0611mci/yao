@@ -1,7 +1,9 @@
 萌宠优选 · 宠物商城功能完善版
-Version: v2.3.0 (user-ui v1.2.0)
+Version: v2.4.0 (user-ui v1.2.0)
 Build date: 2026-10-27
-Entry: start-mall.bat
+Entry: start-all.bat (user 81 + admin 80); start-mall.bat (user only); start-admin-runtime.bat (admin only)
+Bootstrap: setup/build-ui.ps1 installs deps, generates admin-ui .env.production (/prod-api), builds both UIs
 Validation: verify/session-index, verify/catalog-boundary, verify/multi-sku, verify/member-features, verify/repair, verify/user-ui
-Package JAR: dist/ruoyi-admin.jar
+Package JAR: dist/ruoyi-admin.jar (not committed; built from source on first run when Maven is available)
 Source JAR: backend/ruoyi-admin/target/ruoyi-admin.jar
+Integration notes: docs/整合说明-v2.4.0.md
