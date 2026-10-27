@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useMember } from '../stores/member.js'
 import { useCart } from '../stores/cart.js'
 import { useApp } from '../stores/app.js'
@@ -7,6 +9,16 @@ import Icon from './Icon.vue'
 const member = useMember(),
   cart = useCart(),
   app = useApp()
+const route = useRoute()
+// 分区高亮：四个入口共用 /items 这条路由记录，物种只体现在 query 上，
+// 不能交给 router-link 的 active-class（它按路由记录匹配、不看 query，
+// 会让「全部好物」在专区页也保持高亮），这里按 query.species 自行判定。
+const SECTION_KEYS = ['CAT', 'DOG', 'SMALL']
+const activeSection = computed(() => {
+  if (route.path !== '/items') return ''
+  const key = String(route.query.species || '').toUpperCase()
+  return SECTION_KEYS.includes(key) ? key : 'ALL'
+})
 </script>
 <template>
   <div class="utility">
@@ -42,10 +54,13 @@ const member = useMember(),
   <nav class="category-bar">
     <div class="container">
       <router-link to="/" exact-active-class="active">首页</router-link
-      ><router-link to="/items" active-class="active">全部好物</router-link
-      ><router-link to="/items?species=CAT">猫咪专区</router-link
-      ><router-link to="/items?species=DOG">狗狗专区</router-link
-      ><router-link to="/items?species=SMALL">小宠生活</router-link
+      ><router-link to="/items" :class="{ active: activeSection === 'ALL' }">全部好物</router-link
+      ><router-link to="/items?species=CAT" :class="{ active: activeSection === 'CAT' }"
+        >猫咪专区</router-link
+      ><router-link to="/items?species=DOG" :class="{ active: activeSection === 'DOG' }"
+        >狗狗专区</router-link
+      ><router-link to="/items?species=SMALL" :class="{ active: activeSection === 'SMALL' }"
+        >小宠生活</router-link
       ><router-link to="/member/pets" class="nav-tail"
         >为它选，更合适 <Icon name="ArrowRight" :size="14"
       /></router-link>
