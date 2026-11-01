@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-26T20:23:15.391Z",
+  "checks": [
+    {
+      "name": "root with a child cannot be moved below another root",
+      "code": 200,
+      "errorCode": null,
+      "message": "类目已更新",
+      "passed": false
+    },
+    {
+      "name": "a third level cannot be created",
+      "code": 1001,
+      "errorCode": "PET-1001",
+      "message": "分类最多支持两级",
+      "passed": true
+    },
+    {
+      "name": "a category cannot be its own parent",
+      "code": 1001,
+      "errorCode": "PET-1001",
+      "message": "上级分类不能是自己",
+      "passed": true
+    },
+    {
+      "name": "null order line is a validation error",
+      "code": 500,
+      "passed": false
+    },
+    {
+      "name": "null SKU is a validation error",
+      "code": 500,
+      "passed": false
+    }
+  ]
+}

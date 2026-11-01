@@ -1,0 +1,80 @@
+商城后端 ruoyi-mall 规模与关键实现证据（补录 AI-010 / AI-011）
+=================================================================
+
+采集日期：2026-10-26
+版本说明：采集对象为当前 HEAD 的 backend/ruoyi-mall；该目录与 2026-10-19 验收版本逐字节一致
+          （见 verify/integration-20261026.txt 的 `git diff` 无输出结论）。
+
+采集命令（项目根目录）：
+  powershell -NoProfile -ExecutionPolicy Bypass -File _scan.ps1    # 规模统计
+  powershell -NoProfile -ExecutionPolicy Bypass -File _cnt.ps1     # 注解/映射统计
+  powershell -NoProfile -ExecutionPolicy Bypass -File _cnt2.ps1    # 逐控制器映射统计
+
+[1] 规模（backend/ruoyi-mall/src/main/java/com/ruoyi/mall）
+JAVA_TOTAL=120
+JAVA_LINES=8480
+controller = 22 files / 1446 lines
+service    = 14 files / 2658 lines
+domain     = 14 files / 2122 lines
+dto        = 34 files /  642 lines
+mapper     = 14 files /  417 lines
+common     = 18 files / 1021 lines
+config     =  1 file  /   30 lines
+state      =  2 files（OrderStateMachine / OrderStatus）
+event      =  1 file  （MemberMessageEvent）
+resources/mapper/mall = 14 个 XML
+src/test   = 不存在（无单元测试）
+
+[2] 接口与注解
+ENDPOINT_MAPPINGS=73（GET 32 / POST 19 / PUT 18 / DELETE 4）
+PREAUTHORIZE=34
+LOG_ANNO=17
+VALID=27
+TRANSACTIONAL_IN_SERVICE=35
+
+[3] 逐控制器映射（映射数 / @PreAuthorize 数）
+AddressController 6/0            AdminAuditController 1/1        AdminCategoryController 5/5
+AdminDashboardController 1/1     AdminItemController 6/6         AdminJobController 2/2
+AdminMemberController 2/2        AdminOrderController 3/3        AdminStockController 3/3
+CartController 4/0               CheckoutController 1/0          HomeController 2/0
+ItemController 2/0               MemberController 5/0            MerchantItemController 5/5
+MerchantOrderController 3/3      MerchantStockController 3/3     MessageController 4/0
+OrderController 5/0              PayController 3/0               PetProfileController 5/0
+UploadController 2/0
+合计 73 = 管理端 23 + POST /api/upload/image → A1–A24 共 24 项
+            + 商家端 11 → M1–M11
+            + 用户端 37 + POST /api/member/upload/image → U01–U38 共 38 项
+
+[4] 关键实现定位（文件:行号）
+防超卖     PetItemSkuMapper.xml:26-31
+           UPDATE pet_item_sku SET stock=stock-#{quantity} WHERE id=? AND status=1 AND stock>=#{quantity}
+流水判重   StockService.java:43  countBySkuOrderType(skuId, orderNo, TYPE_ORDER_DEDUCT) > 0 → 直接返回
+扣减失败   StockService.java:52-56  rows==0 → BizException(PET_3001) 整单回滚
+计价       PriceCalculator.java:17-34  总额 → 免邮阈值 → 运费 → 应付（BigDecimal，HALF_UP 2 位）
+下单       CheckoutService.java:96-180 同店校验、按 skuId 升序扣减、订单/明细快照、清购物车、incrementSales
+订单号     CheckoutService.java:372-375  "PM" + yyyyMMddHHmmss + 6 位随机
+状态机     OrderStateMachine.java:26-45  九状态矩阵；assertTransition → PET_3002（:58-65）
+支付幂等   PaymentService.java:49-63,73-77  selectByIdempotencyKey → duplicated=true，不改订单
+金额校验   PaymentService.java:83-87  compareTo != 0 → PET_4002
+条件推进   PaymentService.java:115-130 updateToPaid 影响 0 行则回读最新状态
+取消回滚   OrderService.java:154-158  状态断言 + rollbackStock
+发货       OrderService.java:183-186（商家）/ 208-210（平台），物流写入 receiverSnapshot
+超时关单   OrderService.java:243-259  批量 ≤100、条件 close、回滚库存、消息通知
+自动确认   OrderService.java:265-277  按 mall.auto-confirm-days
+手动补偿   AdminJobController.java:29-33  POST /api/admin/jobs/close-timeout-orders（mall:job:trigger）
+审核       PetItemMapper.xml:109-114  驳回时 status 强制置 0；无 AND audit_status=0 条件
+会员 Token MemberTokenService.java:22,30-56  member_tokens: + UUID + 剩余<1 天续期
+限流       MallRateLimiter.java:20-33  Redis 固定窗口，TTL 回填 Retry-After
+参数       MallConfigService.java:60-103  8 个 mall.* 键（超时/自动确认/宠物/地址/购物车/限购/免邮/运费/回调令牌）
+定时任务   无 @Scheduled、无 mall Quartz Job、sys_job 无商城记录（仅手动接口）
+
+[5] 运行验收（2026-10-19 记录，见 verify/evidence-20261019.txt）
+PASS=30 FAIL=0 SKIP=0
+  公开接口 4 | 会员域 8（含未登录 HTTP 401 + biz=2001）
+  管理员域 8 | 后台/会员 Token 隔离 1（会员 Token 调后台接口 → biz=401）
+  商家域 4（含越权 biz=403）| 审核员域 5（含越权 biz=403）
+
+[6] 未做项（如实登记）
+- backend/ruoyi-mall/src/test 为空、无 JaCoCo：单测、并发（20 线程抢库存 1）、回调重放、状态机全矩阵均未自动化
+- 超时关单/自动确认无调度，仅 A22/A23 手动触发
+- PetItemMapper.updateAudit 缺 `AND audit_status=0` 条件更新（并发双审可覆盖）

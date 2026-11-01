@@ -1,0 +1,153 @@
+{
+  "date": "2026-10-26",
+  "routes": [
+    {
+      "path": "/items",
+      "heading": "认真挑选，每一份喜欢"
+    },
+    {
+      "path": "/search?keyword=幼猫",
+      "heading": "“幼猫” 的搜索结果"
+    },
+    {
+      "path": "/member",
+      "heading": "你好，用户端演示员"
+    },
+    {
+      "path": "/member/pets",
+      "heading": "它的小档案"
+    },
+    {
+      "path": "/member/addresses",
+      "heading": "收货地址"
+    },
+    {
+      "path": "/messages",
+      "heading": "消息中心"
+    },
+    {
+      "path": "/orders",
+      "heading": "我的订单"
+    },
+    {
+      "path": "/orders/PM20261026112224192748",
+      "heading": "已完成"
+    },
+    {
+      "path": "/pay/PM20261026112224192748",
+      "heading": "最后一步，把喜欢带回家"
+    },
+    {
+      "path": "/pay/result?orderNo=PM20261026112224192748&result=FAIL",
+      "heading": "支付成功，小快乐即将出发"
+    },
+    {
+      "path": "/agreement?type=privacy",
+      "heading": "隐私政策"
+    },
+    {
+      "path": "/not-a-real-route",
+      "heading": "哎呀，毛孩子把页面藏起来了"
+    }
+  ],
+  "mobile": [
+    {
+      "path": "/",
+      "headings": [
+        "它的小日常，我们的大认真。"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/items",
+      "headings": [
+        "认真挑选，每一份喜欢"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/items/1",
+      "headings": [
+        "皇家幼猫粮 K36 2kg"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/cart",
+      "headings": [
+        " 购物车 0 件好物"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/member",
+      "headings": [
+        "你好，用户端演示员"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/member/pets",
+      "headings": [
+        "它的小档案"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/member/addresses",
+      "headings": [
+        "收货地址"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/messages",
+      "headings": [
+        "消息中心"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/orders",
+      "headings": [
+        "我的订单"
+      ],
+      "viewport": 375,
+      "width": 360
+    },
+    {
+      "path": "/orders/PM20261026112224192748",
+      "headings": [
+        "已完成"
+      ],
+      "viewport": 375,
+      "width": 360
+    }
+  ],
+  "flow": [
+    "游客加购",
+    "登录回跳与购物车合并",
+    "服务端结算99元",
+    "创建订单PM20261026112224192748",
+    "沙箱支付成功",
+    "展示课程演示物流 USERUI-TEST-1026",
+    "确认收货后状态4已完成",
+    "宠物档案团团（演示）保存",
+    "退出登录",
+    "匿名购物车跳转登录",
+    "登录与注册空字段校验"
+  ],
+  "notes": [
+    "仅本地课程环境及虚拟数据",
+    "管理员发货通过本地验收脚本完成，用户端不调用管理员接口",
+    "支付URL结果不决定成功，重新查询服务端状态"
+  ]
+}

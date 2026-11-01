@@ -1,0 +1,71 @@
+{
+  "at": "2026-10-26T20:33:36.964Z",
+  "checks": [
+    {
+      "name": "root with a child cannot be moved below another root",
+      "code": 1001,
+      "errorCode": "PET-1001",
+      "message": "该分类下有子分类，请先移动子分类；分类最多支持两级",
+      "passed": true
+    },
+    {
+      "name": "a third level cannot be created",
+      "code": 1001,
+      "errorCode": "PET-1001",
+      "message": "分类最多支持两级",
+      "passed": true
+    },
+    {
+      "name": "a category cannot be its own parent",
+      "code": 1001,
+      "errorCode": "PET-1001",
+      "message": "上级分类不能是自己",
+      "passed": true
+    },
+    {
+      "name": "member opaque token cannot access admin categories",
+      "passed": true
+    },
+    {
+      "name": "forged opaque token cannot authenticate an admin",
+      "passed": true
+    },
+    {
+      "name": "null order line is a validation error",
+      "code": 1001,
+      "errorCode": "PET-1001",
+      "message": "订单明细不能包含空项",
+      "passed": true
+    },
+    {
+      "name": "null SKU is a validation error",
+      "code": 1001,
+      "errorCode": "PET-1001",
+      "message": "商品规格不能包含空项",
+      "passed": true
+    },
+    {
+      "name": "null product image is a validation error",
+      "code": 1001,
+      "errorCode": "PET-1001",
+      "message": "商品图片不能包含空项",
+      "passed": true
+    },
+    {
+      "name": "concurrent opposing moves cannot create a cycle",
+      "passed": true
+    },
+    {
+      "name": "child creation competing with parent move preserves two levels",
+      "passed": true
+    },
+    {
+      "name": "parent deletion competing with child creation cannot orphan a category",
+      "passed": true
+    },
+    {
+      "name": "all test categories remain reachable within two levels",
+      "passed": true
+    }
+  ]
+}

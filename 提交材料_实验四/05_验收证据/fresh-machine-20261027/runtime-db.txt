@@ -1,0 +1,10 @@
+R01 feature tables	PASS
+R02 preference ownership	PASS
+R03 favorite ownership	PASS
+R04 payment request references	PASS
+R05 exactly one default per address book	PASS
+R06 nonnegative inventory	PASS
+R07 valid preferences	PASS
+R08 successful payment order and amount	PASS
+R09 two-level category tree	PASS
+R10 product category references	PASS
